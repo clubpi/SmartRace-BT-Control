@@ -90,6 +90,10 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 ![Konfigurationsbereich der Weboberflaeche](docs/images/ui-settings.png)
 
+### Neue Optionen: Praefix und Langdruck
+
+![Optionen fuer Praefix und Langdruck aktivieren/deaktivieren](docs/images/ui-toggle-options.jpeg)
+
 ### Speichern und Service
 
 ![Speichern- und Service-Bereich](docs/images/ui-service.png)
@@ -109,6 +113,19 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - src: Firmware-Implementierung
 - test: Platzhalter fuer Tests
 - platformio.ini: Board-/Toolchain-Konfiguration
+
+## Changelog
+
+### 2026-03-23
+
+- Webinterface um neue Schalter erweitert:
+  - Praefix bei Kurzdruck senden (ein/aus)
+  - Langdruck aktivieren (ein/aus)
+- Button-Logik angepasst fuer deaktivierbares Praefix und deaktivierbaren Langdruck.
+- Setup-AP auf WPA2 umgestellt (Passwort: 12345678).
+- Service-Aktionen im Webinterface auf POST umgestellt (Neustart / Bonds loeschen).
+- README erweitert und auf Deutsch aktualisiert.
+- Screenshots und Diagramme in README integriert.
 
 ## Hinweise
 
