@@ -14,7 +14,8 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
 - Konfigurierbares Tasten-Mapping ueber die Weboberflaeche
 - Schaltbare Optionen in der Weboberflaeche:
   - Praefix bei Kurzdruck senden (ein/aus)
-  - Langdruck aktivieren (ein/aus)
+  - Praefix nur einmal senden bis Langdruck erfolgt (ein/aus)
+  - Batteriemodus (ein/aus, schaltet WLAN nach 60 Sekunden ab)
 - Speicherung der Konfiguration im NVS (Preferences)
 - BLE-Bond-Reset ueber die Weboberflaeche
 - Lokaler Setup-AP mit WPA2:
@@ -68,13 +69,14 @@ platformio device monitor --baud 115200
 1. ESP32 einschalten.
 2. Mit dem WLAN SmartRace-Setup verbinden (Passwort 12345678).
 3. Im Browser http://192.168.4.1 oeffnen.
-4. Konfigurieren:
+4. Konfigurieren im Abschnitt "Allgemein":
    - Bluetooth-Name
    - Kurzdruck-Praefix
    - Verzoegerung nach Praefix
   - Option: Praefix bei Kurzdruck senden
+  - Option: Praefix nur einmal senden bis Langdruck erfolgt
    - Langdruck-Taste und Langdruck-Zeit
-  - Option: Langdruck aktivieren
+   - **Batteriemodus aktivieren/deaktivieren** (Button in diesem Abschnitt)
    - Tasten fuer Button 1 bis 6
 5. Ueber die Weboberflaeche speichern und neu starten.
 
@@ -104,8 +106,9 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - LED blinkt, wenn keine BLE-Verbindung besteht.
 - Kurzdruck sendet die zugeordnete Taste.
 - Wenn Praefix bei Kurzdruck aktiv ist, wird zuerst das Praefix gesendet, dann nach der eingestellten Verzoegerung die Taste.
-- Wenn Langdruck aktiviert ist, sendet langes Druecken die global konfigurierte Langdruck-Taste.
-- Wenn Langdruck deaktiviert ist, wird ein langer Tastendruck wie ein normaler Kurzdruck behandelt.
+- Wenn "Praefix nur einmal senden" aktiv ist, wird das Praefix beim ersten Kurzdruck (z. B. Taste 1) gesendet und bleibt danach fuer alle Tasten gesperrt, bis ein Langdruck erfolgt.
+- Langdruck ist immer aktiv und sendet die global konfigurierte Langdruck-Taste.
+- Wenn Batteriemodus aktiviert ist, schaltet sich das WLAN nach 60 Sekunden automatisch ab (Bluetooth bleibt aktiv). Das WLAN kann jederzeit manuell ueber den Batteriemodus-Button wieder aktiviert werden.
 
 ## Projektstruktur
 
@@ -118,12 +121,20 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 ### 2026-03-23
 
+- **Batteriemodus implementiert:**
+  - Automatischer Shutdown des WLAN nach 60 Sekunden
+  - Bluetooth bleibt aktiv fuer Tastatureingaben
+  - Toggle-Button im Abschnitt "Allgemein"
+  - Daueraktivierung moglich zum Nachweis des AP
 - Webinterface um neue Schalter erweitert:
   - Praefix bei Kurzdruck senden (ein/aus)
-  - Langdruck aktivieren (ein/aus)
-- Button-Logik angepasst fuer deaktivierbares Praefix und deaktivierbaren Langdruck.
+  - Praefix nur einmal senden bis Langdruck erfolgt (ein/aus)
+  - Batteriemodus aktivieren/deaktivieren
+- Button-Logik angepasst fuer deaktivierbares Praefix und einmaliges Praefix bis zum naechsten Langdruck.
+- Langdruck-Umschalter aus der Weboberflaeche entfernt (Langdruck ist immer aktiv).
 - Setup-AP auf WPA2 umgestellt (Passwort: 12345678).
 - Service-Aktionen im Webinterface auf POST umgestellt (Neustart / Bonds loeschen).
+- Batteriemodus-Button in Allgemein-Abschnitt verschoben fuer bessere Sichtbarkeit.
 - README erweitert und auf Deutsch aktualisiert.
 - Screenshots und Diagramme in README integriert.
 

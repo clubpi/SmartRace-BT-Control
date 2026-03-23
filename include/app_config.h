@@ -7,9 +7,9 @@ struct AppConfig {
     char shortPrefixKey;
     uint32_t shortDelayMs;
     bool sendPrefixOnShortPress;
+    bool sendPrefixOnlyOnceUntilLongPress;
     char longPressKey;
     uint32_t longPressMs;
-    bool enableLongPress;
     char buttonKeys[6];
 };
 

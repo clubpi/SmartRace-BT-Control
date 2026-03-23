@@ -149,13 +149,22 @@ static String buildPage() {
     html += String(g_config.longPressMs);
     html += "'><div class='hint'>Beispiel: 500 = sehr kurz, 1200 = angenehm, 2000 = deutlich lang</div></div>";
 
-    html += "<div class='grid-2' style='margin-top:14px'>";
-    html += "<div class='check-row'><input type='checkbox' id='send_prefix' name='send_prefix' value='1'";
+    html += "<div class='check-row' style='margin-top:14px'><input type='checkbox' id='send_prefix' name='send_prefix' value='1'";
     if (g_config.sendPrefixOnShortPress) html += " checked";
     html += "><label for='send_prefix'>Praefix bei Kurzdruck senden</label></div>";
-    html += "<div class='check-row'><input type='checkbox' id='enable_long_press' name='enable_long_press' value='1'";
-    if (g_config.enableLongPress) html += " checked";
-    html += "><label for='enable_long_press'>Langdruck aktivieren</label></div>";
+
+    html += "<div class='check-row' style='margin-top:14px'><input type='checkbox' id='prefix_once' name='prefix_once' value='1'";
+    if (g_config.sendPrefixOnlyOnceUntilLongPress) html += " checked";
+    html += "><label for='prefix_once'>Praefix nur einmal senden (Reset durch Langdruck)</label></div>";
+
+    html += "<div class='btn-row' style='margin-top:14px'>";
+    html += "<form class='inline-form' method='POST' action='/battery-mode-toggle'>";
+    if (wifiApIsBatteryModeEnabled()) {
+        html += "<button class='btn btn-secondary' type='submit'>Batteriemodus deaktivieren</button>";
+    } else {
+        html += "<button class='btn btn-primary' type='submit'>Batteriemodus aktivieren</button>";
+    }
+    html += "</form>";
     html += "</div>";
     html += "</div>";
 
@@ -181,13 +190,6 @@ static String buildPage() {
     html += "<button class='btn btn-warning' type='submit'>Bondings löschen</button></form>";
     html += "<form class='inline-form' method='POST' action='/reboot' onsubmit=\"return confirm('ESP32 wirklich neu starten?');\">";
     html += "<button class='btn btn-danger' type='submit'>Neustarten</button></form>";
-    html += "<form class='inline-form' method='POST' action='/battery-mode-toggle'>";
-    if (wifiApIsBatteryModeEnabled()) {
-        html += "<button class='btn btn-secondary' type='submit'>Batteriemodus deaktivieren</button>";
-    } else {
-        html += "<button class='btn btn-primary' type='submit'>Batteriemodus aktivieren</button>";
-    }
-    html += "</form>";
     html += "</div><div class='footer-note'>Wenn das iPhone oder iPad noch komisch reagiert, dort zusätzlich unter Bluetooth das Gerät ignorieren und dann neu koppeln.</div></div>";
 
     html += "</div></body></html>";
@@ -205,9 +207,9 @@ static void handleSave() {
     g_config.shortPrefixKey = safeCharFromArg(server.arg("short_prefix"), '7');
     g_config.shortDelayMs = safeUIntFromArg(server.arg("short_delay"), 2000, 0, 10000);
     g_config.sendPrefixOnShortPress = server.hasArg("send_prefix");
+    g_config.sendPrefixOnlyOnceUntilLongPress = server.hasArg("prefix_once");
     g_config.longPressKey = safeCharFromArg(server.arg("long_key"), '8');
     g_config.longPressMs = safeUIntFromArg(server.arg("long_time"), 1200, 200, 10000);
-    g_config.enableLongPress = server.hasArg("enable_long_press");
 
     g_config.buttonKeys[0] = safeCharFromArg(server.arg("b1"), '1');
     g_config.buttonKeys[1] = safeCharFromArg(server.arg("b2"), '2');

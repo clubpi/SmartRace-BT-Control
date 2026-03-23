@@ -13,6 +13,7 @@ static unsigned long lastDebounceTime[6];
 static bool pressedFlag[6];
 static unsigned long pressTime[6];
 static bool longPressHandled[6];
+static bool prefixReady = true;
 
 void buttonsInit() {
     for (int i = 0; i < 6; i++) {
@@ -49,16 +50,25 @@ void buttonsLoop() {
                 } else {
                     if (pressedFlag[i]) {
                         unsigned long duration = millis() - pressTime[i];
-                        bool shortPressTriggered = !g_config.enableLongPress ||
-                                                  (!longPressHandled[i] && duration < g_config.longPressMs);
+                        bool shortPressTriggered = !longPressHandled[i] && duration < g_config.longPressMs;
 
                         if (shortPressTriggered) {
                             Serial.print("Short press button ");
                             Serial.println(i + 1);
 
                             if (g_config.sendPrefixOnShortPress) {
-                                bleSendKey(g_config.shortPrefixKey);
-                                delay(g_config.shortDelayMs);
+                                bool shouldSendPrefix = true;
+                                if (g_config.sendPrefixOnlyOnceUntilLongPress) {
+                                    shouldSendPrefix = prefixReady;
+                                }
+
+                                if (shouldSendPrefix) {
+                                    bleSendKey(g_config.shortPrefixKey);
+                                    delay(g_config.shortDelayMs);
+                                    if (g_config.sendPrefixOnlyOnceUntilLongPress) {
+                                        prefixReady = false;
+                                    }
+                                }
                             }
                             bleSendKey(g_config.buttonKeys[i]);
                         }
@@ -70,12 +80,13 @@ void buttonsLoop() {
             }
         }
 
-        if (g_config.enableLongPress && pressedFlag[i] && !longPressHandled[i]) {
+        if (pressedFlag[i] && !longPressHandled[i]) {
             if (millis() - pressTime[i] >= g_config.longPressMs) {
                 Serial.print("Long press button ");
                 Serial.println(i + 1);
 
                 bleSendKey(g_config.longPressKey);
+                prefixReady = true;
                 longPressHandled[i] = true;
             }
         }
