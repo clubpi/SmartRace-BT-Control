@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760">
+  <defs>
+    <style>
+      .title { font: 700 32px 'Segoe UI', Tahoma, sans-serif; fill: #0f2342; }
+      .label { font: 600 18px 'Segoe UI', Tahoma, sans-serif; fill: #10243f; }
+      .pin { font: 700 17px 'Consolas', monospace; fill: #134b72; }
+      .note { font: 500 15px 'Segoe UI', Tahoma, sans-serif; fill: #355a82; }
+      .board { fill: #eef7ff; stroke: #2f679f; stroke-width: 2; rx: 18; }
+      .button { fill: #f8fcff; stroke: #2b79b8; stroke-width: 2; rx: 8; }
+      .wire { stroke: #0b7a75; stroke-width: 3; fill: none; }
+      .gnd { stroke: #8c3d2d; stroke-width: 3; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1100" height="760" fill="#ffffff" />
+  <text x="40" y="56" class="title">SmartRace BT Control - GPIO Verdrahtung</text>
+
+  <rect x="420" y="95" width="280" height="560" class="board" />
+  <text x="490" y="135" class="label">ESP32 Dev Module</text>
+
+  <text x="455" y="195" class="pin">GPIO14</text>
+  <text x="455" y="255" class="pin">GPIO27</text>
+  <text x="455" y="315" class="pin">GPIO26</text>
+  <text x="455" y="375" class="pin">GPIO25</text>
+  <text x="455" y="435" class="pin">GPIO33</text>
+  <text x="455" y="495" class="pin">GPIO32</text>
+  <text x="455" y="575" class="pin">GND</text>
+
+  <rect x="80" y="165" width="220" height="45" class="button" /><text x="115" y="194" class="label">Taste 1</text>
+  <rect x="80" y="225" width="220" height="45" class="button" /><text x="115" y="254" class="label">Taste 2</text>
+  <rect x="80" y="285" width="220" height="45" class="button" /><text x="115" y="314" class="label">Taste 3</text>
+  <rect x="80" y="345" width="220" height="45" class="button" /><text x="115" y="374" class="label">Taste 4</text>
+  <rect x="80" y="405" width="220" height="45" class="button" /><text x="115" y="434" class="label">Taste 5</text>
+  <rect x="80" y="465" width="220" height="45" class="button" /><text x="115" y="494" class="label">Taste 6</text>
+
+  <path d="M300 188 L420 188" class="wire" />
+  <path d="M300 248 L420 248" class="wire" />
+  <path d="M300 308 L420 308" class="wire" />
+  <path d="M300 368 L420 368" class="wire" />
+  <path d="M300 428 L420 428" class="wire" />
+  <path d="M300 488 L420 488" class="wire" />
+
+  <path d="M300 188 C350 188, 350 575, 420 575" class="gnd" />
+  <path d="M300 248 C350 248, 350 575, 420 575" class="gnd" />
+  <path d="M300 308 C350 308, 350 575, 420 575" class="gnd" />
+  <path d="M300 368 C350 368, 350 575, 420 575" class="gnd" />
+  <path d="M300 428 C350 428, 350 575, 420 575" class="gnd" />
+  <path d="M300 488 C350 488, 350 575, 420 575" class="gnd" />
+
+  <text x="760" y="200" class="label">Hinweise</text>
+  <text x="760" y="236" class="note">- Taster gegen GND schalten</text>
+  <text x="760" y="266" class="note">- INPUT_PULLUP ist aktiv</text>
+  <text x="760" y="296" class="note">- Logikpegel bei Druck = LOW</text>
+  <text x="760" y="326" class="note">- Entprellung in Firmware aktiv</text>
+</svg>

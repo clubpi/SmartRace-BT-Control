@@ -3,6 +3,10 @@
 ESP32-Firmware, die sechs physische Tasten als Bluetooth-Tastatur bereitstellt.
 Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaeche zur Laufzeitkonfiguration.
 
+## Uebersicht
+
+![Systemuebersicht](docs/images/system-overview.svg)
+
 ## Funktionen
 
 - Bluetooth-Tastatur-Emulation mit ESP32 BLE Keyboard
@@ -28,6 +32,8 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
   - Taste 6: GPIO 32
 
 Jede Taste zwischen den jeweiligen GPIO-Pin und GND anschliessen.
+
+![GPIO Verdrahtung](docs/images/gpio-wiring.svg)
 
 ## Build und Upload
 
@@ -68,6 +74,20 @@ platformio device monitor --baud 115200
 5. Ueber die Weboberflaeche speichern und neu starten.
 
 Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umgesetzt.
+
+## Screenshots
+
+### Startseite
+
+![Startseite der Weboberflaeche](docs/images/ui-home.png)
+
+### Konfiguration
+
+![Konfigurationsbereich der Weboberflaeche](docs/images/ui-settings.png)
+
+### Speichern und Service
+
+![Speichern- und Service-Bereich](docs/images/ui-service.png)
 
 ## Laufzeitverhalten
 
