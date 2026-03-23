@@ -158,13 +158,11 @@ static String buildPage() {
     html += "><label for='prefix_once'>Praefix nur einmal senden (Reset durch Langdruck)</label></div>";
 
     html += "<div class='btn-row' style='margin-top:14px'>";
-    html += "<form class='inline-form' method='POST' action='/battery-mode-toggle'>";
     if (wifiApIsBatteryModeEnabled()) {
-        html += "<button class='btn btn-secondary' type='submit'>Batteriemodus deaktivieren</button>";
+        html += "<button class='btn btn-secondary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus deaktivieren</button>";
     } else {
-        html += "<button class='btn btn-primary' type='submit'>Batteriemodus aktivieren</button>";
+        html += "<button class='btn btn-primary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus aktivieren</button>";
     }
-    html += "</form>";
     html += "</div>";
     html += "</div>";
 
