@@ -8,6 +8,7 @@ void configLoad() {
     prefs.begin("smartrace", true);
 
     g_config.btName = prefs.getString("bt_name", "SmartRace BT Control");
+    g_config.batteryModeEnabled = prefs.getBool("bat_on", false);
     g_config.shortPrefixKey = (char)prefs.getUChar("sprefix", '7');
     g_config.shortDelayMs = prefs.getUInt("sdelay", 2000);
     g_config.sendPrefixOnShortPress = prefs.getBool("sp_on", true);
@@ -29,6 +30,7 @@ void configSave() {
     prefs.begin("smartrace", false);
 
     prefs.putString("bt_name", g_config.btName);
+    prefs.putBool("bat_on", g_config.batteryModeEnabled);
     prefs.putUChar("sprefix", (uint8_t)g_config.shortPrefixKey);
     prefs.putUInt("sdelay", g_config.shortDelayMs);
     prefs.putBool("sp_on", g_config.sendPrefixOnShortPress);

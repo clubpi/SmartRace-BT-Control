@@ -39,6 +39,7 @@ void setup() {
 }
 
 void loop() {
+    wifiApLoop();
     webUiLoop();
     buttonsLoop();
     statusLedLoop();

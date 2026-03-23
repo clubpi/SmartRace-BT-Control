@@ -41,6 +41,21 @@ static String connectionStatusClass() {
     return bleIsConnected() ? "ok" : "warn";
 }
 
+static String batteryModeText() {
+    return wifiApIsBatteryModeEnabled() ? "Aktiv" : "Aus";
+}
+
+static String apModeText() {
+    if (!wifiApIsActive()) {
+        return "Aus";
+    }
+    if (wifiApIsBatteryModeEnabled()) {
+        uint32_t remainingSeconds = wifiApRemainingMs() / 1000;
+        return String("An (noch ") + String(remainingSeconds) + String("s)");
+    }
+    return "Dauerhaft an";
+}
+
 static String buildPage() {
     String html;
     html += "<!doctype html><html><head><meta charset='utf-8'>";
@@ -53,7 +68,7 @@ static String buildPage() {
     html += ".hero{background:linear-gradient(135deg,#18284c 0%,#101b33 100%);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,.25)}";
     html += ".title{font-size:30px;font-weight:800;letter-spacing:.2px;margin:0 0 6px}";
     html += ".subtitle{margin:0;color:var(--muted);font-size:15px}";
-    html += ".status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}";
+    html += ".status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}";
     html += ".stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px}";
     html += ".stat small{display:block;color:var(--muted);margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}";
     html += ".stat strong{font-size:18px}";
@@ -103,6 +118,11 @@ static String buildPage() {
     html += "<div class='stat'><small>Webadresse</small><strong>";
     html += WiFi.softAPIP().toString();
     html += "</strong></div>";
+    html += "<div class='stat'><small>Batteriemodus</small><strong>";
+    html += batteryModeText();
+    html += "</strong><div class='hint' style='margin-top:6px'>AP: ";
+    html += apModeText();
+    html += "</div></div>";
     html += "</div></div>";
 
     html += "<form method='POST' action='/save'>";
@@ -161,6 +181,13 @@ static String buildPage() {
     html += "<button class='btn btn-warning' type='submit'>Bondings löschen</button></form>";
     html += "<form class='inline-form' method='POST' action='/reboot' onsubmit=\"return confirm('ESP32 wirklich neu starten?');\">";
     html += "<button class='btn btn-danger' type='submit'>Neustarten</button></form>";
+    html += "<form class='inline-form' method='POST' action='/battery-mode-toggle'>";
+    if (wifiApIsBatteryModeEnabled()) {
+        html += "<button class='btn btn-secondary' type='submit'>Batteriemodus deaktivieren</button>";
+    } else {
+        html += "<button class='btn btn-primary' type='submit'>Batteriemodus aktivieren</button>";
+    }
+    html += "</form>";
     html += "</div><div class='footer-note'>Wenn das iPhone oder iPad noch komisch reagiert, dort zusätzlich unter Bluetooth das Gerät ignorieren und dann neu koppeln.</div></div>";
 
     html += "</div></body></html>";
@@ -217,11 +244,24 @@ static void handleReboot() {
     ESP.restart();
 }
 
+static void handleBatteryModeToggle() {
+    bool enableBatteryMode = !wifiApIsBatteryModeEnabled();
+    wifiApSetBatteryMode(enableBatteryMode);
+    g_config.batteryModeEnabled = enableBatteryMode;
+    configSave();
+
+    server.send(200, "text/html; charset=utf-8",
+                "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                "<style>body{font-family:Arial;background:#0b1220;color:#eef4ff;padding:32px}</style></head><body>"
+                "<h2>Batteriemodus aktualisiert</h2><p>Einstellung wurde gespeichert.</p><p><a href='/' style='color:#8fb4ff'>Zurueck</a></p></body></html>");
+}
+
 void webUiInit() {
     server.on("/", HTTP_GET, handleRoot);
     server.on("/save", HTTP_POST, handleSave);
     server.on("/delete-bonds", HTTP_POST, handleDeleteBonds);
     server.on("/reboot", HTTP_POST, handleReboot);
+    server.on("/battery-mode-toggle", HTTP_POST, handleBatteryModeToggle);
     server.begin();
 
     Serial.println("Web UI started");

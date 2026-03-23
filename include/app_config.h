@@ -3,6 +3,7 @@
 
 struct AppConfig {
     String btName;
+    bool batteryModeEnabled;
     char shortPrefixKey;
     uint32_t shortDelayMs;
     bool sendPrefixOnShortPress;
