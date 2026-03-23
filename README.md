@@ -12,6 +12,9 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
 - Bluetooth-Tastatur-Emulation mit ESP32 BLE Keyboard
 - 6 Tasten-Eingaenge mit Entprellung sowie Kurz-/Langdruck-Logik
 - Konfigurierbares Tasten-Mapping ueber die Weboberflaeche
+- Schaltbare Optionen in der Weboberflaeche:
+  - Praefix bei Kurzdruck senden (ein/aus)
+  - Langdruck aktivieren (ein/aus)
 - Speicherung der Konfiguration im NVS (Preferences)
 - BLE-Bond-Reset ueber die Weboberflaeche
 - Lokaler Setup-AP mit WPA2:
@@ -69,7 +72,9 @@ platformio device monitor --baud 115200
    - Bluetooth-Name
    - Kurzdruck-Praefix
    - Verzoegerung nach Praefix
+  - Option: Praefix bei Kurzdruck senden
    - Langdruck-Taste und Langdruck-Zeit
+  - Option: Langdruck aktivieren
    - Tasten fuer Button 1 bis 6
 5. Ueber die Weboberflaeche speichern und neu starten.
 
@@ -93,8 +98,10 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 - LED leuchtet dauerhaft, wenn BLE verbunden ist.
 - LED blinkt, wenn keine BLE-Verbindung besteht.
-- Kurzdruck sendet erst das Praefix, wartet die konfigurierte Zeit und sendet dann die zugeordnete Taste.
-- Langdruck sendet die global konfigurierte Langdruck-Taste.
+- Kurzdruck sendet die zugeordnete Taste.
+- Wenn Praefix bei Kurzdruck aktiv ist, wird zuerst das Praefix gesendet, dann nach der eingestellten Verzoegerung die Taste.
+- Wenn Langdruck aktiviert ist, sendet langes Druecken die global konfigurierte Langdruck-Taste.
+- Wenn Langdruck deaktiviert ist, wird ein langer Tastendruck wie ein normaler Kurzdruck behandelt.
 
 ## Projektstruktur
 

@@ -49,13 +49,17 @@ void buttonsLoop() {
                 } else {
                     if (pressedFlag[i]) {
                         unsigned long duration = millis() - pressTime[i];
+                        bool shortPressTriggered = !g_config.enableLongPress ||
+                                                  (!longPressHandled[i] && duration < g_config.longPressMs);
 
-                        if (!longPressHandled[i] && duration < g_config.longPressMs) {
+                        if (shortPressTriggered) {
                             Serial.print("Short press button ");
                             Serial.println(i + 1);
 
-                            bleSendKey(g_config.shortPrefixKey);
-                            delay(g_config.shortDelayMs);
+                            if (g_config.sendPrefixOnShortPress) {
+                                bleSendKey(g_config.shortPrefixKey);
+                                delay(g_config.shortDelayMs);
+                            }
                             bleSendKey(g_config.buttonKeys[i]);
                         }
 
@@ -66,7 +70,7 @@ void buttonsLoop() {
             }
         }
 
-        if (pressedFlag[i] && !longPressHandled[i]) {
+        if (g_config.enableLongPress && pressedFlag[i] && !longPressHandled[i]) {
             if (millis() - pressTime[i] >= g_config.longPressMs) {
                 Serial.print("Long press button ");
                 Serial.println(i + 1);

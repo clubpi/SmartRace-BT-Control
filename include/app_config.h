@@ -5,8 +5,10 @@ struct AppConfig {
     String btName;
     char shortPrefixKey;
     uint32_t shortDelayMs;
+    bool sendPrefixOnShortPress;
     char longPressKey;
     uint32_t longPressMs;
+    bool enableLongPress;
     char buttonKeys[6];
 };
 

@@ -10,8 +10,10 @@ void configLoad() {
     g_config.btName = prefs.getString("bt_name", "SmartRace BT Control");
     g_config.shortPrefixKey = (char)prefs.getUChar("sprefix", '7');
     g_config.shortDelayMs = prefs.getUInt("sdelay", 2000);
+    g_config.sendPrefixOnShortPress = prefs.getBool("sp_on", true);
     g_config.longPressKey = (char)prefs.getUChar("lkey", '8');
     g_config.longPressMs = prefs.getUInt("ltime", 1200);
+    g_config.enableLongPress = prefs.getBool("lp_on", true);
 
     g_config.buttonKeys[0] = (char)prefs.getUChar("b1", '1');
     g_config.buttonKeys[1] = (char)prefs.getUChar("b2", '2');
@@ -29,8 +31,10 @@ void configSave() {
     prefs.putString("bt_name", g_config.btName);
     prefs.putUChar("sprefix", (uint8_t)g_config.shortPrefixKey);
     prefs.putUInt("sdelay", g_config.shortDelayMs);
+    prefs.putBool("sp_on", g_config.sendPrefixOnShortPress);
     prefs.putUChar("lkey", (uint8_t)g_config.longPressKey);
     prefs.putUInt("ltime", g_config.longPressMs);
+    prefs.putBool("lp_on", g_config.enableLongPress);
 
     prefs.putUChar("b1", (uint8_t)g_config.buttonKeys[0]);
     prefs.putUChar("b2", (uint8_t)g_config.buttonKeys[1]);

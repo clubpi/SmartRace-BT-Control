@@ -68,6 +68,9 @@ static String buildPage() {
     html += ".field label{display:block;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:700}";
     html += "input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #33476b;background:#0d1526;color:var(--text);font-size:16px;outline:none}";
     html += "input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,124,255,.15)}";
+    html += "input[type='checkbox']{width:auto;padding:0;margin:0;accent-color:var(--accent)}";
+    html += ".check-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px}";
+    html += ".check-row label{margin:0;color:var(--text);font-size:15px;font-weight:700}";
     html += ".btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}";
     html += ".btn{appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;cursor:pointer;transition:.15s ease;min-height:48px}";
     html += ".btn-primary{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:white}";
@@ -125,6 +128,15 @@ static String buildPage() {
     html += "<div class='field' style='margin-top:14px'><label>Langdruck Zeit (ms)</label><input name='long_time' type='number' min='200' max='10000' value='";
     html += String(g_config.longPressMs);
     html += "'><div class='hint'>Beispiel: 500 = sehr kurz, 1200 = angenehm, 2000 = deutlich lang</div></div>";
+
+    html += "<div class='grid-2' style='margin-top:14px'>";
+    html += "<div class='check-row'><input type='checkbox' id='send_prefix' name='send_prefix' value='1'";
+    if (g_config.sendPrefixOnShortPress) html += " checked";
+    html += "><label for='send_prefix'>Praefix bei Kurzdruck senden</label></div>";
+    html += "<div class='check-row'><input type='checkbox' id='enable_long_press' name='enable_long_press' value='1'";
+    if (g_config.enableLongPress) html += " checked";
+    html += "><label for='enable_long_press'>Langdruck aktivieren</label></div>";
+    html += "</div>";
     html += "</div>";
 
     html += "<div class='section'><h2>Tasten 1 bis 6</h2><div class='grid-6'>";
@@ -165,8 +177,10 @@ static void handleSave() {
 
     g_config.shortPrefixKey = safeCharFromArg(server.arg("short_prefix"), '7');
     g_config.shortDelayMs = safeUIntFromArg(server.arg("short_delay"), 2000, 0, 10000);
+    g_config.sendPrefixOnShortPress = server.hasArg("send_prefix");
     g_config.longPressKey = safeCharFromArg(server.arg("long_key"), '8');
     g_config.longPressMs = safeUIntFromArg(server.arg("long_time"), 1200, 200, 10000);
+    g_config.enableLongPress = server.hasArg("enable_long_press");
 
     g_config.buttonKeys[0] = safeCharFromArg(server.arg("b1"), '1');
     g_config.buttonKeys[1] = safeCharFromArg(server.arg("b2"), '2');
