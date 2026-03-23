@@ -121,6 +121,10 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 ### 2026-03-23
 
+- **Neu (Prefix-Once + Langdruck immer aktiv):**
+  - Option "Praefix nur einmal senden bis Langdruck erfolgt" hinzugefuegt.
+  - Verhalten: Nach erstem Praefix senden alle Tasten nur noch ihre Nummer, bis ein Langdruck erfolgt.
+  - Option zum Deaktivieren von Langdruck entfernt (Langdruck ist jetzt immer aktiv).
 - **Batteriemodus implementiert:**
   - Automatischer Shutdown des WLAN nach 60 Sekunden
   - Bluetooth bleibt aktiv fuer Tastatureingaben
