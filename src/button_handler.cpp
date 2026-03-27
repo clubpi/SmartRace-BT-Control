@@ -3,7 +3,12 @@
 #include "ble_control.h"
 #include <Arduino.h>
 
+#if CONFIG_IDF_TARGET_ESP32S3
+// Avoid GPIOs reserved for flash/psram on ESP32-S3 modules.
+static const uint8_t buttonPins[6] = {4, 5, 6, 7, 15, 16};
+#else
 static const uint8_t buttonPins[6] = {14, 27, 26, 25, 33, 32};
+#endif
 static const unsigned long debounceDelay = 30;
 
 static bool lastReading[6];

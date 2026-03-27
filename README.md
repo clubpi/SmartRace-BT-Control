@@ -29,14 +29,16 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
 - Framework: Arduino (PlatformIO)
 - Status-LED: GPIO 2
 - Tasten (active LOW, INPUT_PULLUP):
-  - Taste 1: GPIO 14
-  - Taste 2: GPIO 27
-  - Taste 3: GPIO 26
-  - Taste 4: GPIO 25
-  - Taste 5: GPIO 33
-  - Taste 6: GPIO 32
+  - Taste 1: GPIO 4
+  - Taste 2: GPIO 5
+  - Taste 3: GPIO 6
+  - Taste 4: GPIO 7
+  - Taste 5: GPIO 15
+  - Taste 6: GPIO 16
 
 Jede Taste zwischen den jeweiligen GPIO-Pin und GND anschliessen.
+
+Hinweis fuer ESP32-S3: GPIOs fuer Flash/PSRAM (z. B. 26-33) nicht als Tastenpins verwenden.
 
 ![GPIO Verdrahtung](docs/images/gpio-wiring.svg)
 
