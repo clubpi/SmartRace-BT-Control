@@ -51,6 +51,8 @@ Hinweis fuer ESP32-S3: GPIOs fuer Flash/PSRAM (z. B. 26-33) nicht als Tastenpins
 
 Basierend auf dem DevKitC-1 Pinout (dein Bild + Espressif Doku):
 
+![ESP32-S3 DevKitC-1 Pin Layout](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/_images/ESP32-S3_DevKitC-1_pinlayout_v1.1.jpg)
+
 - Fuer Taster sind die aktuell gesetzten GPIOs 4, 5, 6, 7, 15, 16 gut geeignet.
 - Nicht fuer normale Taster verwenden:
   - GPIO35, GPIO36, GPIO37 (bei Octal Flash/PSRAM intern belegt)
