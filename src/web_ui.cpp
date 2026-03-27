@@ -378,16 +378,35 @@ static void handleWifiScan() {
     if (n <= 0) {
         g_wifiScanHtml = "<div class='hint'>Keine Netzwerke gefunden.</div>";
     } else {
-        String html = "<div class='field'><label>Scan Ergebnis</label><ul class='list'>";
+        String html = "<div class='field'><label>Scan Ergebnis (anklickbar)</label><ul class='list'>";
         int count = n > 20 ? 20 : n;
         for (int i = 0; i < count; i++) {
-            html += "<li>" + htmlEscape(WiFi.SSID(i)) + " (" + String(WiFi.RSSI(i)) + " dBm";
+            String ssid = WiFi.SSID(i);
+            bool isOpen = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN);
+
+            html += "<li><div style='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap'>";
+            html += "<span>" + htmlEscape(ssid) + " (" + String(WiFi.RSSI(i)) + " dBm";
             if (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) {
                 html += ", offen";
             }
-            html += ")</li>";
+            html += ")</span>";
+
+            html += "<form method='POST' action='/wifi-connect' style='display:inline-flex;gap:6px;align-items:center'>";
+            html += "<input type='hidden' name='sta_ssid' value='" + htmlEscape(ssid) + "'>";
+            if (isOpen) {
+                html += "<input type='hidden' name='sta_password' value=''>";
+            } else {
+                html += "<input type='hidden' name='sta_password' value='" + htmlEscape(g_config.staPassword) + "'>";
+            }
+            if (g_config.staAutoConnect) {
+                html += "<input type='hidden' name='sta_auto' value='1'>";
+            }
+            html += "<button class='btn btn-secondary' type='submit'>Verbinden</button>";
+            html += "</form>";
+            html += "</div></li>";
         }
         html += "</ul></div>";
+        html += "<div class='hint'>Hinweis: Bei gesicherten Netzen wird das aktuell eingetragene STA-Passwort verwendet.</div>";
         g_wifiScanHtml = html;
     }
     appLog(String("WiFi scan done: ") + String(n) + " networks");

@@ -47,6 +47,17 @@ Jede Taste zwischen den jeweiligen GPIO-Pin und GND anschliessen.
 
 Hinweis fuer ESP32-S3: GPIOs fuer Flash/PSRAM (z. B. 26-33) nicht als Tastenpins verwenden.
 
+### Pinout-Hinweise (ESP32-S3-DevKitC-1)
+
+Basierend auf dem DevKitC-1 Pinout (dein Bild + Espressif Doku):
+
+- Fuer Taster sind die aktuell gesetzten GPIOs 4, 5, 6, 7, 15, 16 gut geeignet.
+- Nicht fuer normale Taster verwenden:
+  - GPIO35, GPIO36, GPIO37 (bei Octal Flash/PSRAM intern belegt)
+  - GPIO19, GPIO20 (USB D-/D+)
+  - Strapping/Boot-nahe Pins wie GPIO0, GPIO45, GPIO46 nur mit Vorsicht
+- Onboard RGB-LED sitzt je nach Revision auf GPIO38 (v1.1) bzw. GPIO48 (initiale Revision).
+
 ![GPIO Verdrahtung](docs/images/gpio-wiring.svg)
 
 ## Build und Upload
