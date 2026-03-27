@@ -1,5 +1,6 @@
 #include "web_ui.h"
 #include "app_config.h"
+#include "app_log.h"
 #include "ble_control.h"
 #include "bond_manager.h"
 #include "wifi_ap.h"
@@ -7,8 +8,16 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <esp_system.h>
 
 static WebServer server(80);
+static String g_wifiScanHtml = "<div class='hint'>Noch kein WLAN-Scan gestartet.</div>";
+
+enum UiPage {
+    PAGE_OVERVIEW,
+    PAGE_WIFI,
+    PAGE_SYSTEM
+};
 
 static String htmlEscape(const String& s) {
     String out = s;
@@ -33,169 +42,282 @@ static uint32_t safeUIntFromArg(const String& arg, uint32_t fallback, uint32_t m
     return (uint32_t)v;
 }
 
-static String connectionStatusText() {
+static String bleText() {
     return bleIsConnected() ? "Verbunden" : "Nicht verbunden";
 }
 
-static String connectionStatusClass() {
-    return bleIsConnected() ? "ok" : "warn";
+static String staText() {
+    return wifiStaStatusText();
 }
 
-static String batteryModeText() {
+static String apText() {
+    if (!wifiApIsActive()) return "Aus";
+    if (!wifiApIsBatteryModeEnabled()) return "Dauerhaft an";
+    return String("An (") + String(wifiApRemainingMs() / 1000) + String("s)");
+}
+
+static String batteryText() {
     return wifiApIsBatteryModeEnabled() ? "Aktiv" : "Aus";
 }
 
-static String apModeText() {
-    if (!wifiApIsActive()) {
-        return "Aus";
-    }
-    if (wifiApIsBatteryModeEnabled()) {
-        uint32_t remainingSeconds = wifiApRemainingMs() / 1000;
-        return String("An (noch ") + String(remainingSeconds) + String("s)");
-    }
-    return "Dauerhaft an";
+static String statusClass(bool ok) {
+    return ok ? "ok" : "warn";
 }
 
-static String buildPage() {
+static String commonStyle() {
+    String html;
+    html += "<style>";
+    html += ":root{--bg:#0c1324;--panel:#17263e;--panel2:#1f3150;--line:#2f476e;--text:#ecf3ff;--muted:#9eb2d2;--accent:#0ca678;--accent2:#14b886;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;}";
+    html += "*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif}";
+    html += ".app{min-height:100vh;display:flex}";
+    html += ".sidebar{width:250px;background:linear-gradient(180deg,#13233a 0%,#101d30 100%);border-right:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:14px}";
+    html += ".brand{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);border-radius:12px;padding:14px 12px;font-size:27px;font-weight:800;letter-spacing:.3px}";
+    html += ".group-title{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:8px}";
+    html += ".nav-link{display:block;padding:11px 12px;border-radius:10px;text-decoration:none;color:var(--text);font-weight:700;border:1px solid transparent}";
+    html += ".nav-link:hover{background:#1a2d49;border-color:var(--line)}";
+    html += ".nav-link.active{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#062419}";
+    html += ".device{margin-top:auto;font-size:13px;color:var(--muted);line-height:1.5}";
+    html += ".content{flex:1;padding:22px}";
+    html += ".headline{font-size:40px;margin:0 0 6px;font-weight:800;letter-spacing:.2px}";
+    html += ".sub{margin:0 0 14px;color:var(--muted)}";
+    html += ".status-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}";
+    html += ".chip{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px}";
+    html += ".chip .k{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}";
+    html += ".chip .v{font-size:15px;font-weight:800}";
+    html += ".badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px;border:1px solid transparent}";
+    html += ".badge.ok{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35);color:#9df4b8}";
+    html += ".badge.warn{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35);color:#ffd38d}";
+    html += ".section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}";
+    html += ".section h2{margin:0 0 10px;font-size:19px}";
+    html += ".grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}";
+    html += ".grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}";
+    html += ".field{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}";
+    html += ".field label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:700}";
+    html += "input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #3c5885;background:#0e1728;color:var(--text);font-size:15px;outline:none}";
+    html += "input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(20,184,134,.15)}";
+    html += "input[type='checkbox']{width:auto;padding:0;margin:0;accent-color:var(--accent)}";
+    html += ".check{display:flex;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}";
+    html += ".check label{font-weight:700}";
+    html += ".btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}";
+    html += ".btn{border:none;border-radius:10px;padding:10px 14px;min-height:40px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:13px}";
+    html += ".btn-primary{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#062419}";
+    html += ".btn-secondary{background:#23395d;color:var(--text);border:1px solid var(--line)}";
+    html += ".btn-warning{background:#4a3518;color:#ffdca3;border:1px solid rgba(245,158,11,.35)}";
+    html += ".btn-danger{background:#491b22;color:#ffd7de;border:1px solid rgba(239,68,68,.35)}";
+    html += ".hint{color:var(--muted);font-size:12px;margin-top:8px}";
+    html += ".mono{font-family:Consolas,'Courier New',monospace;font-size:12px;line-height:1.45;background:#0f1a2d;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:300px;overflow:auto}";
+    html += ".list{margin:0;padding-left:18px}";
+    html += ".list li{margin:5px 0}";
+    html += "@media(max-width:980px){.app{flex-direction:column}.sidebar{width:100%}.status-row{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.grid-6{grid-template-columns:repeat(3,1fr)}}";
+    html += "@media(max-width:620px){.status-row{grid-template-columns:1fr}.headline{font-size:30px}.grid-6{grid-template-columns:repeat(2,1fr)}}";
+    html += "</style>";
+    return html;
+}
+
+static String logsHtml() {
+    String html = "<div class='mono'>";
+    int n = appLogCount();
+    if (n == 0) {
+        html += "Noch keine Logs.";
+    } else {
+        for (int i = 0; i < n; i++) {
+            html += htmlEscape(appLogGet(i));
+            html += "\n";
+        }
+    }
+    html += "</div>";
+    return html;
+}
+
+static String pageShellStart(const String& title, UiPage active) {
     String html;
     html += "<!doctype html><html><head><meta charset='utf-8'>";
     html += "<meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>";
-    html += "<title>SmartRace BT Control</title>";
-    html += "<style>";
-    html += ":root{--bg:#0b1220;--card:#121b2d;--card2:#182338;--line:#2a3957;--text:#eef4ff;--muted:#a8b5ce;--accent:#5b7cff;--accent2:#7a95ff;--ok:#19c37d;--warn:#f5a524;--danger:#ef4444;}";
-    html += "*{box-sizing:border-box}html,body{margin:0;padding:0;background:linear-gradient(180deg,#0a1020 0%,#0f1728 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}";
-    html += ".wrap{max-width:980px;margin:0 auto;padding:18px}";
-    html += ".hero{background:linear-gradient(135deg,#18284c 0%,#101b33 100%);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,.25)}";
-    html += ".title{font-size:30px;font-weight:800;letter-spacing:.2px;margin:0 0 6px}";
-    html += ".subtitle{margin:0;color:var(--muted);font-size:15px}";
-    html += ".status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}";
-    html += ".stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px}";
-    html += ".stat small{display:block;color:var(--muted);margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}";
-    html += ".stat strong{font-size:18px}";
-    html += ".badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-weight:700;font-size:14px}";
-    html += ".badge.ok{background:rgba(25,195,125,.15);color:#8ff0c0;border:1px solid rgba(25,195,125,.35)}";
-    html += ".badge.warn{background:rgba(245,165,36,.14);color:#ffd089;border:1px solid rgba(245,165,36,.35)}";
-    html += ".section{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.18)}";
-    html += ".section h2{margin:0 0 14px;font-size:20px}";
-    html += ".grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}";
-    html += ".grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}";
-    html += ".field{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px}";
-    html += ".field label{display:block;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:700}";
-    html += "input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #33476b;background:#0d1526;color:var(--text);font-size:16px;outline:none}";
-    html += "input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,124,255,.15)}";
-    html += "input[type='checkbox']{width:auto;padding:0;margin:0;accent-color:var(--accent)}";
-    html += ".check-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px}";
-    html += ".check-row label{margin:0;color:var(--text);font-size:15px;font-weight:700}";
-    html += ".btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}";
-    html += ".btn{appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;cursor:pointer;transition:.15s ease;min-height:48px}";
-    html += ".btn-primary{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:white}";
-    html += ".btn-secondary{background:#1a2741;color:var(--text);border:1px solid var(--line)}";
-    html += ".btn-danger{background:#3a1820;color:#ffd8de;border:1px solid rgba(239,68,68,.35)}";
-    html += ".btn-warning{background:#3e2b14;color:#ffe1ac;border:1px solid rgba(245,165,36,.28)}";
-    html += ".inline-form{display:inline} ";
-    html += ".hint{font-size:13px;color:var(--muted);margin-top:8px}";
-    html += ".key-card{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}";
-    html += ".key-card .k{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:700}";
-    html += ".key-card input{text-align:center;font-size:22px;font-weight:800;padding:16px 8px}";
-    html += ".footer-note{margin-top:16px;color:var(--muted);font-size:13px;line-height:1.5}";
-    html += "@media(max-width:900px){.grid-6{grid-template-columns:repeat(3,1fr)}.status-grid{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}}";
-    html += "@media(max-width:600px){.wrap{padding:12px}.title{font-size:26px}.grid-6{grid-template-columns:repeat(2,1fr)}}";
-    html += "</style></head><body>";
+    html += "<title>" + title + "</title>";
+    html += commonStyle();
+    html += "</head><body><div class='app'>";
 
-    html += "<div class='wrap'>";
-    html += "<div class='hero'>";
-    html += "<h1 class='title'>SmartRace BT Control</h1>";
-    html += "<p class='subtitle'>Bluetooth-Tastatur mit 6 Eingängen, Web-Setup und Bond-Reset</p>";
-    html += "<div class='status-grid'>";
-    html += "<div class='stat'><small>Status</small><strong><span class='badge ";
-    html += connectionStatusClass();
-    html += "'>";
-    html += connectionStatusText();
-    html += "</span></strong></div>";
-    html += "<div class='stat'><small>Access Point</small><strong>";
-    html += wifiApSsid();
-    html += "</strong></div>";
-    html += "<div class='stat'><small>Webadresse</small><strong>";
-    html += WiFi.softAPIP().toString();
-    html += "</strong></div>";
-    html += "<div class='stat'><small>Batteriemodus</small><strong>";
-    html += batteryModeText();
-    html += "</strong><div class='hint' style='margin-top:6px'>AP: ";
-    html += apModeText();
-    html += "</div></div>";
-    html += "</div></div>";
+    html += "<aside class='sidebar'>";
+    html += "<div class='brand'>SmartRace</div>";
+
+    html += "<div class='group-title'>Dashboard</div>";
+    html += "<a class='nav-link";
+    if (active == PAGE_OVERVIEW) html += " active";
+    html += "' href='/'>Overview</a>";
+
+    html += "<div class='group-title'>System Settings</div>";
+    html += "<a class='nav-link";
+    if (active == PAGE_WIFI) html += " active";
+    html += "' href='/wifi-setup'>WiFi Setup</a>";
+    html += "<a class='nav-link";
+    if (active == PAGE_SYSTEM) html += " active";
+    html += "' href='/system-info'>System Info</a>";
+
+    html += "<div class='device'>";
+    html += "Software: SmartRace BT Control<br>";
+    html += "Hardware: ESP32-S3 DevKitC-1";
+    html += "</div>";
+    html += "</aside>";
+
+    html += "<main class='content'>";
+    html += "<h1 class='headline'>" + title + "</h1>";
+    html += "<p class='sub'>AP + STA parallel aktiv, Web-Manager und Diagnosen</p>";
+
+    html += "<div class='status-row'>";
+    html += "<div class='chip'><span class='k'>BLE</span><span class='v'><span class='badge " + statusClass(bleIsConnected()) + "'>" + bleText() + "</span></span></div>";
+    html += "<div class='chip'><span class='k'>Access Point</span><span class='v'>" + apText() + "</span></div>";
+    html += "<div class='chip'><span class='k'>AP IP</span><span class='v'>" + WiFi.softAPIP().toString() + "</span></div>";
+    html += "<div class='chip'><span class='k'>STA</span><span class='v'><span class='badge " + statusClass(wifiStaIsConnected()) + "'>" + staText() + "</span></span></div>";
+    html += "<div class='chip'><span class='k'>Batteriemodus</span><span class='v'>" + batteryText() + "</span></div>";
+    html += "</div>";
+
+    return html;
+}
+
+static String pageShellEnd() {
+    return "</main></div></body></html>";
+}
+
+static String buildOverviewPage() {
+    String html = pageShellStart("System Overview", PAGE_OVERVIEW);
 
     html += "<form method='POST' action='/save'>";
-    html += "<div class='section'><h2>Allgemein</h2>";
+    html += "<section class='section'><h2>General Configuration</h2>";
     html += "<div class='grid-2'>";
-    html += "<div class='field'><label>Bluetooth Name</label><input name='bt_name' maxlength='31' value='";
-    html += htmlEscape(g_config.btName);
-    html += "'></div>";
-    html += "<div class='field'><label>Langdruck Zahl</label><input name='long_key' maxlength='1' value='";
-    html += String(g_config.longPressKey);
-    html += "'></div>";
+    html += "<div class='field'><label>Bluetooth Name</label><input name='bt_name' maxlength='31' value='" + htmlEscape(g_config.btName) + "'></div>";
+    html += "<div class='field'><label>Long Press Key</label><input name='long_key' maxlength='1' value='" + String(g_config.longPressKey) + "'></div>";
     html += "</div>";
 
-    html += "<div class='grid-2' style='margin-top:14px'>";
-    html += "<div class='field'><label>Kurzdruck Präfix</label><input name='short_prefix' maxlength='1' value='";
-    html += String(g_config.shortPrefixKey);
-    html += "'></div>";
-    html += "<div class='field'><label>Verzögerung nach Präfix (ms)</label><input name='short_delay' type='number' min='0' max='10000' value='";
-    html += String(g_config.shortDelayMs);
-    html += "'></div>";
+    html += "<div class='grid-2' style='margin-top:10px'>";
+    html += "<div class='field'><label>Short Prefix</label><input name='short_prefix' maxlength='1' value='" + String(g_config.shortPrefixKey) + "'></div>";
+    html += "<div class='field'><label>Delay after Prefix (ms)</label><input name='short_delay' type='number' min='0' max='10000' value='" + String(g_config.shortDelayMs) + "'></div>";
     html += "</div>";
 
-    html += "<div class='field' style='margin-top:14px'><label>Langdruck Zeit (ms)</label><input name='long_time' type='number' min='200' max='10000' value='";
-    html += String(g_config.longPressMs);
-    html += "'><div class='hint'>Beispiel: 500 = sehr kurz, 1200 = angenehm, 2000 = deutlich lang</div></div>";
+    html += "<div class='field' style='margin-top:10px'><label>Long Press Time (ms)</label><input name='long_time' type='number' min='200' max='10000' value='" + String(g_config.longPressMs) + "'></div>";
 
-    html += "<div class='check-row' style='margin-top:14px'><input type='checkbox' id='send_prefix' name='send_prefix' value='1'";
+    html += "<div class='check' style='margin-top:10px'><input type='checkbox' id='send_prefix' name='send_prefix' value='1'";
     if (g_config.sendPrefixOnShortPress) html += " checked";
     html += "><label for='send_prefix'>Praefix bei Kurzdruck senden</label></div>";
 
-    html += "<div class='check-row' style='margin-top:14px'><input type='checkbox' id='prefix_once' name='prefix_once' value='1'";
+    html += "<div class='check' style='margin-top:10px'><input type='checkbox' id='prefix_once' name='prefix_once' value='1'";
     if (g_config.sendPrefixOnlyOnceUntilLongPress) html += " checked";
-    html += "><label for='prefix_once'>Praefix nur einmal senden (Reset durch Langdruck)</label></div>";
+    html += "><label for='prefix_once'>Praefix nur einmal senden bis Langdruck</label></div>";
 
-    html += "<div class='btn-row' style='margin-top:14px'>";
+    html += "<div class='btn-row'>";
     if (wifiApIsBatteryModeEnabled()) {
         html += "<button class='btn btn-secondary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus deaktivieren</button>";
     } else {
         html += "<button class='btn btn-primary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus aktivieren</button>";
     }
-    html += "</div>";
-    html += "</div>";
+    html += "</div></section>";
 
-    html += "<div class='section'><h2>Tasten 1 bis 6</h2><div class='grid-6'>";
+    html += "<section class='section'><h2>Buttons 1-6</h2><div class='grid-6'>";
     for (int i = 0; i < 6; i++) {
-        html += "<div class='key-card'><div class='k'>Taste ";
-        html += String(i + 1);
-        html += "</div><input name='b";
-        html += String(i + 1);
-        html += "' maxlength='1' value='";
-        html += String(g_config.buttonKeys[i]);
-        html += "'></div>";
+        html += "<div class='field'><label>Taste " + String(i + 1) + "</label><input name='b" + String(i + 1) + "' maxlength='1' value='" + String(g_config.buttonKeys[i]) + "'></div>";
     }
-    html += "</div><div class='footer-note'>Kurzdruck sendet zuerst das Präfix und danach nach der eingestellten Wartezeit die jeweilige Taste. Langdruck sendet immer die globale Langdruck-Zahl.</div></div>";
+    html += "</div>";
+    html += "<div class='btn-row'><button class='btn btn-primary' type='submit'>Speichern und Neustarten</button><a class='btn btn-secondary' href='/'>Neu laden</a></div>";
+    html += "</section></form>";
 
-    html += "<div class='section'><h2>Speichern</h2><div class='btn-row'>";
-    html += "<button class='btn btn-primary' type='submit'>Speichern und Neustarten</button>";
-    html += "<a class='btn btn-secondary' href='/'>Neu laden</a>";
-    html += "</div></div></form>";
+    html += "<section class='section'><h2>Service</h2><div class='btn-row'>";
+    html += "<form method='POST' action='/delete-bonds' onsubmit=\"return confirm('Bondings wirklich loeschen und neu starten?');\"><button class='btn btn-warning' type='submit'>Bondings loeschen</button></form>";
+    html += "<form method='POST' action='/reboot' onsubmit=\"return confirm('ESP32 wirklich neu starten?');\"><button class='btn btn-danger' type='submit'>Neustarten</button></form>";
+    html += "</div><div class='hint'>Bei BLE-Problemen Geraet auf dem Smartphone ignorieren und neu koppeln.</div></section>";
 
-    html += "<div class='section'><h2>Service</h2><div class='btn-row'>";
-    html += "<form class='inline-form' method='POST' action='/delete-bonds' onsubmit=\"return confirm('Bondings wirklich löschen und neu starten?');\">";
-    html += "<button class='btn btn-warning' type='submit'>Bondings löschen</button></form>";
-    html += "<form class='inline-form' method='POST' action='/reboot' onsubmit=\"return confirm('ESP32 wirklich neu starten?');\">";
-    html += "<button class='btn btn-danger' type='submit'>Neustarten</button></form>";
-    html += "</div><div class='footer-note'>Wenn das iPhone oder iPad noch komisch reagiert, dort zusätzlich unter Bluetooth das Gerät ignorieren und dann neu koppeln.</div></div>";
+    html += "<section class='section'><h2>Last 20 Logs</h2>" + logsHtml() + "</section>";
 
-    html += "</div></body></html>";
+    html += pageShellEnd();
+    return html;
+}
+
+static String buildWifiPage() {
+    String html = pageShellStart("WiFi Setup", PAGE_WIFI);
+
+    html += "<section class='section'><h2>WiFi Manager (AP + STA)</h2>";
+    html += "<form method='POST' action='/wifi-save'>";
+    html += "<div class='grid-2'>";
+    html += "<div class='field'><label>STA SSID</label><input name='sta_ssid' maxlength='32' value='" + htmlEscape(g_config.staSsid) + "'></div>";
+    html += "<div class='field'><label>STA Password</label><input name='sta_password' type='password' maxlength='64' value='" + htmlEscape(g_config.staPassword) + "'></div>";
+    html += "</div>";
+    html += "<div class='check' style='margin-top:10px'><input type='checkbox' id='sta_auto' name='sta_auto' value='1'";
+    if (g_config.staAutoConnect) html += " checked";
+    html += "><label for='sta_auto'>Auto-Connect beim Start</label></div>";
+
+    html += "<div class='btn-row'>";
+    html += "<button class='btn btn-primary' type='submit'>WLAN Daten speichern</button>";
+    html += "<button class='btn btn-secondary' type='submit' formaction='/wifi-connect'>Jetzt verbinden</button>";
+    html += "<button class='btn btn-warning' type='submit' formaction='/wifi-disconnect'>Trennen</button>";
+    html += "<button class='btn btn-secondary' type='submit' formaction='/wifi-scan'>Scan</button>";
+    html += "</div></form>";
+
+    html += "<div class='hint'>STA Status: " + wifiStaStatusText() + " | SSID: " + htmlEscape(wifiStaSsid()) + " | IP: " + wifiStaIp();
+    if (wifiStaIsConnected()) {
+        html += " | RSSI: " + String(wifiStaRssi()) + " dBm";
+    }
+    html += "</div>";
+
+    html += "<div style='margin-top:12px'>" + g_wifiScanHtml + "</div>";
+    html += "</section>";
+
+    html += "<section class='section'><h2>Network Notes</h2><ul class='list'>";
+    html += "<li>Der ESP bleibt im AP-Modus aktiv (SmartRace-Setup).</li>";
+    html += "<li>Zusatzlich kann er gleichzeitig als STA mit deinem WLAN verbunden sein.</li>";
+    html += "<li>So bleibt die lokale Setup-Seite immer erreichbar.</li>";
+    html += "</ul></section>";
+
+    html += "<section class='section'><h2>Last 20 Logs</h2>" + logsHtml() + "</section>";
+
+    html += pageShellEnd();
+    return html;
+}
+
+static String buildSystemInfoPage() {
+    String html = pageShellStart("System Info", PAGE_SYSTEM);
+
+    html += "<section class='section'><h2>Device</h2><ul class='list'>";
+    html += "<li>Chip: " + htmlEscape(ESP.getChipModel()) + " Rev " + String(ESP.getChipRevision()) + "</li>";
+    html += "<li>CPU: " + String(ESP.getCpuFreqMHz()) + " MHz</li>";
+    html += "<li>Flash: " + String((uint32_t)(ESP.getFlashChipSize() / (1024 * 1024))) + " MB</li>";
+    html += "<li>Sketch size: " + String(ESP.getSketchSize()) + " bytes</li>";
+    html += "<li>Free heap: " + String(ESP.getFreeHeap()) + " bytes</li>";
+    html += "<li>Min free heap: " + String(ESP.getMinFreeHeap()) + " bytes</li>";
+    html += "<li>Uptime: " + String(millis() / 1000) + " s</li>";
+    html += "<li>Reset reason: " + String((int)esp_reset_reason()) + "</li>";
+    html += "</ul></section>";
+
+    html += "<section class='section'><h2>Network</h2><ul class='list'>";
+    html += "<li>AP: " + String(wifiApIsActive() ? "An" : "Aus") + " (" + String(wifiApSsid()) + ")</li>";
+    html += "<li>AP IP: " + WiFi.softAPIP().toString() + "</li>";
+    html += "<li>STA Status: " + wifiStaStatusText() + "</li>";
+    html += "<li>STA SSID: " + htmlEscape(wifiStaSsid()) + "</li>";
+    html += "<li>STA IP: " + wifiStaIp() + "</li>";
+    if (wifiStaIsConnected()) {
+        html += "<li>STA RSSI: " + String(wifiStaRssi()) + " dBm</li>";
+    }
+    html += "</ul></section>";
+
+    html += "<section class='section'><h2>Last 20 Logs</h2>" + logsHtml() + "</section>";
+
+    html += pageShellEnd();
     return html;
 }
 
 static void handleRoot() {
-    server.send(200, "text/html; charset=utf-8", buildPage());
+    server.send(200, "text/html; charset=utf-8", buildOverviewPage());
+}
+
+static void handleWifiSetup() {
+    server.send(200, "text/html; charset=utf-8", buildWifiPage());
+}
+
+static void handleSystemInfo() {
+    server.send(200, "text/html; charset=utf-8", buildSystemInfoPage());
+}
+
+static void applyWifiConfigFromRequest() {
+    g_config.staSsid = server.arg("sta_ssid");
+    g_config.staPassword = server.arg("sta_password");
+    g_config.staAutoConnect = server.hasArg("sta_auto");
 }
 
 static void handleSave() {
@@ -217,6 +339,7 @@ static void handleSave() {
     g_config.buttonKeys[5] = safeCharFromArg(server.arg("b6"), '6');
 
     configSave();
+    appLog("Config saved, restart requested");
 
     server.send(200, "text/html; charset=utf-8",
                 "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -226,16 +349,64 @@ static void handleSave() {
     ESP.restart();
 }
 
+static void handleWifiSave() {
+    applyWifiConfigFromRequest();
+    configSave();
+    appLog(String("WiFi config saved (SSID=") + g_config.staSsid + ")");
+    server.sendHeader("Location", "/wifi-setup");
+    server.send(303, "text/plain", "");
+}
+
+static void handleWifiConnect() {
+    applyWifiConfigFromRequest();
+    configSave();
+    bool ok = wifiStaConnect();
+    appLog(String("WiFi connect action: ") + (ok ? "success" : "failed"));
+    server.sendHeader("Location", "/wifi-setup");
+    server.send(303, "text/plain", "");
+}
+
+static void handleWifiDisconnect() {
+    wifiStaDisconnect();
+    appLog("WiFi disconnect action");
+    server.sendHeader("Location", "/wifi-setup");
+    server.send(303, "text/plain", "");
+}
+
+static void handleWifiScan() {
+    int n = WiFi.scanNetworks();
+    if (n <= 0) {
+        g_wifiScanHtml = "<div class='hint'>Keine Netzwerke gefunden.</div>";
+    } else {
+        String html = "<div class='field'><label>Scan Ergebnis</label><ul class='list'>";
+        int count = n > 20 ? 20 : n;
+        for (int i = 0; i < count; i++) {
+            html += "<li>" + htmlEscape(WiFi.SSID(i)) + " (" + String(WiFi.RSSI(i)) + " dBm";
+            if (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) {
+                html += ", offen";
+            }
+            html += ")</li>";
+        }
+        html += "</ul></div>";
+        g_wifiScanHtml = html;
+    }
+    appLog(String("WiFi scan done: ") + String(n) + " networks");
+    server.sendHeader("Location", "/wifi-setup");
+    server.send(303, "text/plain", "");
+}
+
 static void handleDeleteBonds() {
+    appLog("Delete bonds requested");
     server.send(200, "text/html; charset=utf-8",
                 "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
                 "<style>body{font-family:Arial;background:#0b1220;color:#eef4ff;padding:32px}</style></head><body>"
-                "<h2>Bondings löschen</h2><p>Der ESP32 startet jetzt neu.</p></body></html>");
+                "<h2>Bondings loeschen</h2><p>Der ESP32 startet jetzt neu.</p></body></html>");
     delay(400);
     deleteBondsNow(true);
 }
 
 static void handleReboot() {
+    appLog("Reboot requested");
     server.send(200, "text/html; charset=utf-8",
                 "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
                 "<style>body{font-family:Arial;background:#0b1220;color:#eef4ff;padding:32px}</style></head><body>"
@@ -249,23 +420,28 @@ static void handleBatteryModeToggle() {
     wifiApSetBatteryMode(enableBatteryMode);
     g_config.batteryModeEnabled = enableBatteryMode;
     configSave();
+    appLog(String("Battery mode ") + (enableBatteryMode ? "enabled" : "disabled"));
 
-    server.send(200, "text/html; charset=utf-8",
-                "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-                "<style>body{font-family:Arial;background:#0b1220;color:#eef4ff;padding:32px}</style></head><body>"
-                "<h2>Batteriemodus aktualisiert</h2><p>Einstellung wurde gespeichert.</p><p><a href='/' style='color:#8fb4ff'>Zurueck</a></p></body></html>");
+    server.sendHeader("Location", "/");
+    server.send(303, "text/plain", "");
 }
 
 void webUiInit() {
     server.on("/", HTTP_GET, handleRoot);
+    server.on("/wifi-setup", HTTP_GET, handleWifiSetup);
+    server.on("/system-info", HTTP_GET, handleSystemInfo);
     server.on("/save", HTTP_POST, handleSave);
+    server.on("/wifi-save", HTTP_POST, handleWifiSave);
+    server.on("/wifi-connect", HTTP_POST, handleWifiConnect);
+    server.on("/wifi-disconnect", HTTP_POST, handleWifiDisconnect);
+    server.on("/wifi-scan", HTTP_POST, handleWifiScan);
     server.on("/delete-bonds", HTTP_POST, handleDeleteBonds);
     server.on("/reboot", HTTP_POST, handleReboot);
     server.on("/battery-mode-toggle", HTTP_POST, handleBatteryModeToggle);
     server.begin();
 
-    Serial.println("Web UI started");
-    Serial.println("Open browser: http://192.168.4.1");
+    appLog("Web UI started");
+    appLog("Open browser: http://192.168.4.1");
 }
 
 void webUiLoop() {

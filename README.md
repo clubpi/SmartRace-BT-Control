@@ -16,6 +16,13 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
   - Praefix bei Kurzdruck senden (ein/aus)
   - Praefix nur einmal senden bis Langdruck erfolgt (ein/aus)
   - Batteriemodus (ein/aus, schaltet WLAN nach 60 Sekunden ab)
+- WiFi-Manager fuer WLAN-Client (STA): Speichern, Verbinden, Trennen, Scan
+- Eigene System-Info-Seite mit Laufzeit-/Netzwerkdaten
+- Anzeige der letzten 20 Firmware-Logs in der Weboberflaeche
+- Neues Sidebar-Dashboard-Layout mit getrennten Seiten:
+  - Overview
+  - WiFi Setup
+  - System Info
 - Speicherung der Konfiguration im NVS (Preferences)
 - BLE-Bond-Reset ueber die Weboberflaeche
 - Lokaler Setup-AP mit WPA2:
@@ -72,7 +79,7 @@ platformio device monitor --baud 115200
 1. ESP32 einschalten.
 2. Mit dem WLAN SmartRace-Setup verbinden (Passwort 12345678).
 3. Im Browser http://192.168.4.1 oeffnen.
-4. Konfigurieren im Abschnitt "Allgemein":
+4. In der Sidebar "Overview" oeffnen und konfigurieren:
    - Bluetooth-Name
    - Kurzdruck-Praefix
    - Verzoegerung nach Praefix
@@ -81,7 +88,13 @@ platformio device monitor --baud 115200
    - Langdruck-Taste und Langdruck-Zeit
    - **Batteriemodus aktivieren/deaktivieren** (Button in diesem Abschnitt)
    - Tasten fuer Button 1 bis 6
-5. Ueber die Weboberflaeche speichern und neu starten.
+5. In der Sidebar "WiFi Setup" WLAN-Client (STA) konfigurieren:
+  - SSID + Passwort speichern
+  - Direkt verbinden / trennen
+  - Netzwerk-Scan anzeigen
+6. Ueber die Weboberflaeche speichern und neu starten.
+
+Die Seite "System Info" zeigt Chip-/Speicherwerte, Netzwerkstatus und die letzten 20 Logs.
 
 Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umgesetzt.
 
@@ -127,6 +140,13 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - Hardware-Migration auf ESP32-S3 DevKitC-1 N16R8.
 - PlatformIO-Umgebung in [platformio.ini](platformio.ini) auf ESP32-S3 angepasst.
 - Board-Speicherkonfiguration auf 16 MB Flash / 8 MB PSRAM eingestellt.
+- Partitionstabelle auf `default_16MB.csv` umgestellt.
+- Boot-Stabilitaet verbessert (WDT-Safe-Startpfad).
+- GPIO-Belegung fuer ESP32-S3 auf sichere Pins angepasst.
+- WiFi-Manager eingebaut (STA speichern/verbinden/trennen/scan).
+- Neue Seite "System Info" eingebaut.
+- Log-Ringpuffer eingebaut und Anzeige der letzten 20 Logs im Webinterface.
+- Webinterface auf Sidebar-Dashboard mit separater WiFi-Setup-Seite umgebaut.
 
 ### 2026-03-23
 
@@ -153,6 +173,6 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 ## Hinweise
 
-- Das Projekt nutzt eine benutzerdefinierte Partitionseinstellung: huge_app.csv.
+- Das Projekt nutzt auf ESP32-S3 eine 16MB-Partitionstabelle: `default_16MB.csv`.
 - Die BLE-Keyboard-Abhaengigkeit wird von PlatformIO ueber dieses Repository aufgeloest:
   https://github.com/T-vK/ESP32-BLE-Keyboard

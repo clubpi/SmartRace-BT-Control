@@ -9,6 +9,9 @@ void configLoad() {
 
     g_config.btName = "SmartRace BT Control";
     g_config.batteryModeEnabled = false;
+    g_config.staSsid = "";
+    g_config.staPassword = "";
+    g_config.staAutoConnect = false;
     g_config.shortPrefixKey = '7';
     g_config.shortDelayMs = 2000;
     g_config.sendPrefixOnShortPress = true;
@@ -24,6 +27,9 @@ void configLoad() {
 
     if (prefs.isKey("bt_name")) g_config.btName = prefs.getString("bt_name");
     if (prefs.isKey("bat_on")) g_config.batteryModeEnabled = prefs.getBool("bat_on");
+    if (prefs.isKey("sta_ssid")) g_config.staSsid = prefs.getString("sta_ssid");
+    if (prefs.isKey("sta_pwd")) g_config.staPassword = prefs.getString("sta_pwd");
+    if (prefs.isKey("sta_auto")) g_config.staAutoConnect = prefs.getBool("sta_auto");
     if (prefs.isKey("sprefix")) g_config.shortPrefixKey = (char)prefs.getUChar("sprefix");
     if (prefs.isKey("sdelay")) g_config.shortDelayMs = prefs.getUInt("sdelay");
     if (prefs.isKey("sp_on")) g_config.sendPrefixOnShortPress = prefs.getBool("sp_on");
@@ -45,6 +51,9 @@ void configSave() {
 
     prefs.putString("bt_name", g_config.btName);
     prefs.putBool("bat_on", g_config.batteryModeEnabled);
+    prefs.putString("sta_ssid", g_config.staSsid);
+    prefs.putString("sta_pwd", g_config.staPassword);
+    prefs.putBool("sta_auto", g_config.staAutoConnect);
     prefs.putUChar("sprefix", (uint8_t)g_config.shortPrefixKey);
     prefs.putUInt("sdelay", g_config.shortDelayMs);
     prefs.putBool("sp_on", g_config.sendPrefixOnShortPress);

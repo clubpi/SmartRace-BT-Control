@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_system.h>
+#include "app_log.h"
 #include "app_config.h"
 #include "ble_control.h"
 #include "bond_manager.h"
@@ -27,39 +28,38 @@ void setup() {
     Serial.begin(115200);
     delay(300);
     Serial.println();
-    Serial.println("SmartRace BT Control start");
+    appLog("SmartRace BT Control start");
 
     esp_reset_reason_t reason = esp_reset_reason();
-    Serial.print("[INIT] reset reason: ");
-    Serial.println((int)reason);
+    appLog(String("[INIT] reset reason: ") + String((int)reason));
 
     pinMode(ledPin, OUTPUT);
     digitalWrite(ledPin, LOW);
 
-    Serial.println("[INIT] configLoad");
+    appLog("[INIT] configLoad");
     configLoad();
     delay(1);
 
-    Serial.println("[INIT] wifiApInit");
+    appLog("[INIT] wifiApInit");
     wifiApInit();
     delay(1);
 
     bool skipBleInit = (reason == ESP_RST_WDT || reason == ESP_RST_TASK_WDT || reason == ESP_RST_INT_WDT);
     if (skipBleInit) {
-        Serial.println("[INIT] BLE skipped after WDT reset (safe mode)");
+        appLog("[INIT] BLE skipped after WDT reset (safe mode)");
     } else {
-        Serial.println("[INIT] bleInit");
+        appLog("[INIT] bleInit");
         bleInit();
     }
     delay(1);
 
-    Serial.println("[INIT] buttonsInit");
+    appLog("[INIT] buttonsInit");
     buttonsInit();
 
-    Serial.println("[INIT] webUiInit");
+    appLog("[INIT] webUiInit");
     webUiInit();
 
-    Serial.println("[INIT] setup done");
+    appLog("[INIT] setup done");
 }
 
 void loop() {

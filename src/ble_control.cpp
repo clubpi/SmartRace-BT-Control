@@ -1,5 +1,6 @@
 #include "ble_control.h"
 #include "app_config.h"
+#include "app_log.h"
 #include <Arduino.h>
 #include <BleKeyboard.h>
 
@@ -14,9 +15,8 @@ void bleInit() {
     bleKeyboard = new BleKeyboard(g_config.btName.c_str(), "SmartRace", 100);
     bleKeyboard->begin();
 
-    Serial.print("BLE name: ");
-    Serial.println(g_config.btName);
-    Serial.println("BLE Keyboard started");
+    appLog(String("BLE name: ") + g_config.btName);
+    appLog("BLE Keyboard started");
 }
 
 bool bleIsConnected() {
