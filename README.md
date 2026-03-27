@@ -24,7 +24,8 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
 
 ## Hardware
 
-- Board: ESP32 Dev Module
+- Board: ESP32-S3 DevKitC-1 N16R8
+- Flash / PSRAM: 16 MB Flash / 8 MB PSRAM
 - Framework: Arduino (PlatformIO)
 - Status-LED: GPIO 2
 - Tasten (active LOW, INPUT_PULLUP):
@@ -44,7 +45,7 @@ Jede Taste zwischen den jeweiligen GPIO-Pin und GND anschliessen.
 ### Voraussetzungen
 
 - VS Code mit PlatformIO-Erweiterung
-- USB-Verbindung zum ESP32
+- USB-Verbindung zum ESP32-S3 DevKitC-1
 
 ### Build
 
@@ -118,6 +119,12 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - platformio.ini: Board-/Toolchain-Konfiguration
 
 ## Changelog
+
+### 2026-03-27
+
+- Hardware-Migration auf ESP32-S3 DevKitC-1 N16R8.
+- PlatformIO-Umgebung in [platformio.ini](platformio.ini) auf ESP32-S3 angepasst.
+- Board-Speicherkonfiguration auf 16 MB Flash / 8 MB PSRAM eingestellt.
 
 ### 2026-03-23
 
