@@ -108,8 +108,23 @@ static String commonStyle() {
     html += ".mono{font-family:Consolas,'Courier New',monospace;font-size:12px;line-height:1.45;background:#0f1a2d;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:300px;overflow:auto}";
     html += ".list{margin:0;padding-left:18px}";
     html += ".list li{margin:5px 0}";
+    html += ".sys-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}";
+    html += ".metric-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}";
+    html += ".metric-card{background:linear-gradient(180deg,#1d3354 0%,#182b48 100%);border:1px solid var(--line);border-radius:12px;padding:12px}";
+    html += ".metric-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}";
+    html += ".metric-value{font-size:26px;font-weight:800;line-height:1.05}";
+    html += ".metric-tiny{font-size:12px;color:var(--muted);margin-top:4px}";
+    html += ".kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}";
+    html += ".kv{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}";
+    html += ".kv .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}";
+    html += ".kv .value{font-size:15px;font-weight:700;word-break:break-word}";
+    html += ".meter-row{margin-top:10px}";
+    html += ".meter-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}";
+    html += ".meter{height:10px;border-radius:999px;background:#0f1a2d;border:1px solid var(--line);overflow:hidden}";
+    html += ".meter > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent) 0%,#7ce8c7 100%)}";
     html += "@media(max-width:980px){.app{flex-direction:column}.sidebar{width:100%}.status-row{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.grid-6{grid-template-columns:repeat(3,1fr)}}";
-    html += "@media(max-width:620px){.status-row{grid-template-columns:1fr}.headline{font-size:30px}.grid-6{grid-template-columns:repeat(2,1fr)}}";
+    html += "@media(max-width:980px){.metric-cards{grid-template-columns:1fr 1fr}.sys-grid{grid-template-columns:1fr}.kv-grid{grid-template-columns:1fr}}";
+    html += "@media(max-width:620px){.status-row{grid-template-columns:1fr}.headline{font-size:30px}.grid-6{grid-template-columns:repeat(2,1fr)}.metric-cards{grid-template-columns:1fr}}";
     html += "</style>";
     return html;
 }
@@ -274,27 +289,52 @@ static String buildWifiPage() {
 static String buildSystemInfoPage() {
     String html = pageShellStart("System Info", PAGE_SYSTEM);
 
-    html += "<section class='section'><h2>Device</h2><ul class='list'>";
-    html += "<li>Chip: " + htmlEscape(ESP.getChipModel()) + " Rev " + String(ESP.getChipRevision()) + "</li>";
-    html += "<li>CPU: " + String(ESP.getCpuFreqMHz()) + " MHz</li>";
-    html += "<li>Flash: " + String((uint32_t)(ESP.getFlashChipSize() / (1024 * 1024))) + " MB</li>";
-    html += "<li>Sketch size: " + String(ESP.getSketchSize()) + " bytes</li>";
-    html += "<li>Free heap: " + String(ESP.getFreeHeap()) + " bytes</li>";
-    html += "<li>Min free heap: " + String(ESP.getMinFreeHeap()) + " bytes</li>";
-    html += "<li>Uptime: " + String(millis() / 1000) + " s</li>";
-    html += "<li>Reset reason: " + String((int)esp_reset_reason()) + "</li>";
-    html += "</ul></section>";
+    uint32_t uptimeSec = millis() / 1000;
+    uint32_t flashSize = ESP.getFlashChipSize();
+    uint32_t sketchSize = ESP.getSketchSize();
+    uint32_t heapTotal = ESP.getHeapSize();
+    uint32_t heapFree = ESP.getFreeHeap();
+    uint32_t heapMin = ESP.getMinFreeHeap();
 
-    html += "<section class='section'><h2>Network</h2><ul class='list'>";
-    html += "<li>AP: " + String(wifiApIsActive() ? "An" : "Aus") + " (" + String(wifiApSsid()) + ")</li>";
-    html += "<li>AP IP: " + WiFi.softAPIP().toString() + "</li>";
-    html += "<li>STA Status: " + wifiStaStatusText() + "</li>";
-    html += "<li>STA SSID: " + htmlEscape(wifiStaSsid()) + "</li>";
-    html += "<li>STA IP: " + wifiStaIp() + "</li>";
-    if (wifiStaIsConnected()) {
-        html += "<li>STA RSSI: " + String(wifiStaRssi()) + " dBm</li>";
-    }
-    html += "</ul></section>";
+    uint8_t sketchPct = (flashSize > 0) ? (uint8_t)((sketchSize * 100UL) / flashSize) : 0;
+    uint8_t heapUsedPct = (heapTotal > 0) ? (uint8_t)(((heapTotal - heapFree) * 100UL) / heapTotal) : 0;
+
+    int rssi = wifiStaIsConnected() ? wifiStaRssi() : -120;
+    int signalPct = (rssi + 100) * 2;
+    if (signalPct < 0) signalPct = 0;
+    if (signalPct > 100) signalPct = 100;
+
+    html += "<div class='metric-cards'>";
+    html += "<div class='metric-card'><div class='metric-title'>Uptime</div><div class='metric-value'>" + String(uptimeSec) + "s</div><div class='metric-tiny'>Seit letztem Start</div></div>";
+    html += "<div class='metric-card'><div class='metric-title'>Free Heap</div><div class='metric-value'>" + String(heapFree / 1024) + " KB</div><div class='metric-tiny'>Min: " + String(heapMin / 1024) + " KB</div></div>";
+    html += "<div class='metric-card'><div class='metric-title'>STA Signal</div><div class='metric-value'>" + String(wifiStaIsConnected() ? rssi : 0) + (wifiStaIsConnected() ? " dBm" : " --") + "</div><div class='metric-tiny'>" + String(signalPct) + "% Link-Qualitaet</div></div>";
+    html += "<div class='metric-card'><div class='metric-title'>CPU</div><div class='metric-value'>" + String(ESP.getCpuFreqMHz()) + " MHz</div><div class='metric-tiny'>Reset: " + String((int)esp_reset_reason()) + "</div></div>";
+    html += "</div>";
+
+    html += "<div class='sys-grid'>";
+    html += "<section class='section'><h2>Device</h2>";
+    html += "<div class='kv-grid'>";
+    html += "<div class='kv'><div class='label'>Chip</div><div class='value'>" + htmlEscape(ESP.getChipModel()) + " Rev " + String(ESP.getChipRevision()) + "</div></div>";
+    html += "<div class='kv'><div class='label'>Flash</div><div class='value'>" + String((uint32_t)(flashSize / (1024 * 1024))) + " MB</div></div>";
+    html += "<div class='kv'><div class='label'>Sketch Size</div><div class='value'>" + String(sketchSize / 1024) + " KB</div></div>";
+    html += "<div class='kv'><div class='label'>Heap Total</div><div class='value'>" + String(heapTotal / 1024) + " KB</div></div>";
+    html += "</div>";
+    html += "<div class='meter-row'><div class='meter-head'><span>Flash-Auslastung</span><span>" + String(sketchPct) + "%</span></div><div class='meter'><span style='width:" + String(sketchPct) + "%'></span></div></div>";
+    html += "<div class='meter-row'><div class='meter-head'><span>Heap-Auslastung</span><span>" + String(heapUsedPct) + "%</span></div><div class='meter'><span style='width:" + String(heapUsedPct) + "%'></span></div></div>";
+    html += "</section>";
+
+    html += "<section class='section'><h2>Network</h2>";
+    html += "<div class='kv-grid'>";
+    html += "<div class='kv'><div class='label'>AP Status</div><div class='value'><span class='badge " + statusClass(wifiApIsActive()) + "'>" + String(wifiApIsActive() ? "An" : "Aus") + "</span></div></div>";
+    html += "<div class='kv'><div class='label'>STA Status</div><div class='value'><span class='badge " + statusClass(wifiStaIsConnected()) + "'>" + wifiStaStatusText() + "</span></div></div>";
+    html += "<div class='kv'><div class='label'>AP SSID</div><div class='value'>" + htmlEscape(wifiApSsid()) + "</div></div>";
+    html += "<div class='kv'><div class='label'>STA SSID</div><div class='value'>" + htmlEscape(wifiStaSsid()) + "</div></div>";
+    html += "<div class='kv'><div class='label'>AP IP</div><div class='value'>" + WiFi.softAPIP().toString() + "</div></div>";
+    html += "<div class='kv'><div class='label'>STA IP</div><div class='value'>" + wifiStaIp() + "</div></div>";
+    html += "</div>";
+    html += "<div class='meter-row'><div class='meter-head'><span>STA Signal</span><span>" + String(signalPct) + "%</span></div><div class='meter'><span style='width:" + String(signalPct) + "%'></span></div></div>";
+    html += "</section>";
+    html += "</div>";
 
     html += "<section class='section'><h2>Last 20 Logs</h2>" + logsHtml() + "</section>";
 
@@ -446,6 +486,10 @@ static void handleBatteryModeToggle() {
 }
 
 void webUiInit() {
+    server.on("/favicon.ico", HTTP_GET, []() {
+        server.send(204, "text/plain", "");
+    });
+
     server.on("/", HTTP_GET, handleRoot);
     server.on("/wifi-setup", HTTP_GET, handleWifiSetup);
     server.on("/system-info", HTTP_GET, handleSystemInfo);
@@ -457,6 +501,15 @@ void webUiInit() {
     server.on("/delete-bonds", HTTP_POST, handleDeleteBonds);
     server.on("/reboot", HTTP_POST, handleReboot);
     server.on("/battery-mode-toggle", HTTP_POST, handleBatteryModeToggle);
+
+    server.onNotFound([]() {
+        if (server.method() == HTTP_GET) {
+            server.send(404, "text/plain", "Not Found");
+        } else {
+            server.send(405, "text/plain", "Method Not Allowed");
+        }
+    });
+
     server.begin();
 
     appLog("Web UI started");

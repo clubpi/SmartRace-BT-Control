@@ -173,6 +173,8 @@ Im Log erscheint dabei: `[INIT] recovery: button 1 held, clearing BLE bonds`.
 - Onboard-RGB-LED fuer ESP32-S3 angebunden.
 - RGB-Ansteuerung auf den eingebauten Arduino-ESP32-Neopixel-Treiber umgestellt.
 - DevKitC-1 v1.1 GPIO38 als zusaetzlichen RGB-LED-Pfad beruecksichtigt.
+- System-Info-Seite grafisch erweitert (KPI-Karten, Daten-Kacheln, Balkenanzeigen fuer Speicher und WLAN-Signal).
+- Webserver-Handling verbessert: `favicon.ico` und unbekannte Requests werden sauber beantwortet (404/405), um Fehler-Logs beim Seitenaufruf zu vermeiden.
 
 ### 2026-03-27
 
