@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_system.h>
+#include <esp32-hal-rgb-led.h>
 #include "app_log.h"
 #include "app_config.h"
 #include "ble_control.h"
@@ -11,11 +12,21 @@
 static const uint8_t ledPin = 2;
 #if CONFIG_IDF_TARGET_ESP32S3
 static const uint8_t recoveryButtonPin = 4;  // Taste 1
+// Some DevKitC-1 revisions expose the RGB LED on GPIO38, while the Arduino
+// variant still advertises the built-in NeoPixel path via RGB_BUILTIN/PIN_NEOPIXEL.
+static const uint8_t rgbLedPinFallback = 38;
 #else
 static const uint8_t recoveryButtonPin = 14; // Taste 1
 #endif
 static unsigned long lastBlinkTime = 0;
 static bool ledState = false;
+
+#if CONFIG_IDF_TARGET_ESP32S3
+static void setRgbStatusColor(uint8_t red, uint8_t green, uint8_t blue) {
+    neopixelWrite(RGB_BUILTIN, red, green, blue);
+    neopixelWrite(rgbLedPinFallback, red, green, blue);
+}
+#endif
 
 static bool isBondRecoveryRequestedOnBoot() {
     pinMode(recoveryButtonPin, INPUT_PULLUP);
@@ -39,6 +50,18 @@ static void statusLedLoop() {
             digitalWrite(ledPin, ledState);
         }
     }
+
+#if CONFIG_IDF_TARGET_ESP32S3
+    if (bleIsConnected()) {
+        setRgbStatusColor(0, 28, 0);
+    } else {
+        if (ledState) {
+            setRgbStatusColor(0, 0, 20);
+        } else {
+            setRgbStatusColor(0, 0, 0);
+        }
+    }
+#endif
 }
 
 void setup() {
@@ -52,6 +75,10 @@ void setup() {
 
     pinMode(ledPin, OUTPUT);
     digitalWrite(ledPin, LOW);
+
+#if CONFIG_IDF_TARGET_ESP32S3
+    setRgbStatusColor(0, 0, 0);
+#endif
 
     appLog("[INIT] configLoad");
     configLoad();

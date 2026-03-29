@@ -133,6 +133,10 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 
 - LED leuchtet dauerhaft, wenn BLE verbunden ist.
 - LED blinkt, wenn keine BLE-Verbindung besteht.
+- On ESP32-S3 wird zusaetzlich die Onboard-RGB-LED angesteuert:
+  - Gruen dauerhaft = BLE verbunden
+  - Blau blinkend = nicht verbunden
+  - Die Firmware nutzt den eingebauten Arduino-ESP32 RGB-Pfad und sendet zusaetzlich auf GPIO38 fuer DevKitC-1 v1.1.
 - Kurzdruck sendet die zugeordnete Taste.
 - Wenn Praefix bei Kurzdruck aktiv ist, wird zuerst das Praefix gesendet, dann nach der eingestellten Verzoegerung die Taste.
 - Wenn "Praefix nur einmal senden" aktiv ist, wird das Praefix beim ersten Kurzdruck (z. B. Taste 1) gesendet und bleibt danach fuer alle Tasten gesperrt, bis ein Langdruck erfolgt.
