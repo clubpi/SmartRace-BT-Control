@@ -9,6 +9,25 @@ static BleKeyboard* bleKeyboard = nullptr;
 static const uint16_t keyPressHoldMs = 18;
 static const uint16_t keyReleaseGapMs = 12;
 
+// BleKeyboard treats values >= 136 as HID non-printing keys and subtracts 136 internally.
+static const uint8_t hidRawOffset = 136;
+
+static uint8_t mapDigitToHidKeycode(char key) {
+    switch (key) {
+        case '1': return hidRawOffset + 0x1E;
+        case '2': return hidRawOffset + 0x1F;
+        case '3': return hidRawOffset + 0x20;
+        case '4': return hidRawOffset + 0x21;
+        case '5': return hidRawOffset + 0x22;
+        case '6': return hidRawOffset + 0x23;
+        case '7': return hidRawOffset + 0x24;
+        case '8': return hidRawOffset + 0x25;
+        case '9': return hidRawOffset + 0x26;
+        case '0': return hidRawOffset + 0x27;
+        default: return (uint8_t)key;
+    }
+}
+
 static void configureBleSecurityForCompatibility() {
     // Keep secure connections and bonding, but drop MITM requirement for phone compatibility.
     BLESecurity security;
@@ -39,8 +58,10 @@ bool bleIsConnected() {
 
 void bleSendKey(char key) {
     if (bleKeyboard != nullptr && bleKeyboard->isConnected()) {
+        uint8_t sendKey = mapDigitToHidKeycode(key);
+
         // Explicit press/release improves compatibility with some HID hosts on ESP32-S3.
-        bool pressed = bleKeyboard->press(key);
+        bool pressed = bleKeyboard->press(sendKey);
         if (!pressed) {
             appLog(String("[BLE] press failed for key: ") + String(key));
             return;
