@@ -163,6 +163,17 @@ Im Log erscheint dabei: `[INIT] recovery: button 1 held, clearing BLE bonds`.
 
 ## Changelog
 
+### 2026-03-29
+
+- BLE-Pairing-Kompatibilitaet auf ESP32-S3 verbessert.
+- Bond-Recovery beim Boot eingebaut: Taste 1 beim Start gedrueckt halten loescht gespeicherte BLE-Bonds.
+- Tastensenden auf explizites Press/Hold/Release umgestellt fuer stabilere HID-Uebertragung.
+- Ziffern 0-9 werden jetzt als echte HID-Keycodes statt als ASCII-Zeichen gesendet.
+- Zusatzausgaben fuer Button- und BLE-Diagnose in den Logs ergaenzt.
+- Onboard-RGB-LED fuer ESP32-S3 angebunden.
+- RGB-Ansteuerung auf den eingebauten Arduino-ESP32-Neopixel-Treiber umgestellt.
+- DevKitC-1 v1.1 GPIO38 als zusaetzlichen RGB-LED-Pfad beruecksichtigt.
+
 ### 2026-03-27
 
 - Hardware-Migration auf ESP32-S3 DevKitC-1 N16R8.
