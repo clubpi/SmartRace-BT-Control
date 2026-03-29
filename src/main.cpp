@@ -9,8 +9,25 @@
 #include "wifi_ap.h"
 
 static const uint8_t ledPin = 2;
+#if CONFIG_IDF_TARGET_ESP32S3
+static const uint8_t recoveryButtonPin = 4;  // Taste 1
+#else
+static const uint8_t recoveryButtonPin = 14; // Taste 1
+#endif
 static unsigned long lastBlinkTime = 0;
 static bool ledState = false;
+
+static bool isBondRecoveryRequestedOnBoot() {
+    pinMode(recoveryButtonPin, INPUT_PULLUP);
+    unsigned long startMs = millis();
+    while (millis() - startMs < 1200) {
+        if (digitalRead(recoveryButtonPin) != LOW) {
+            return false;
+        }
+        delay(10);
+    }
+    return true;
+}
 
 static void statusLedLoop() {
     if (bleIsConnected()) {
@@ -43,6 +60,12 @@ void setup() {
     appLog("[INIT] wifiApInit");
     wifiApInit();
     delay(1);
+
+    if (isBondRecoveryRequestedOnBoot()) {
+        appLog("[INIT] recovery: button 1 held, clearing BLE bonds");
+        deleteBondsNow(false);
+        delay(150);
+    }
 
     bool skipBleInit = (reason == ESP_RST_WDT || reason == ESP_RST_TASK_WDT || reason == ESP_RST_INT_WDT);
     if (skipBleInit) {

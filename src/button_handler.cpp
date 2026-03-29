@@ -1,5 +1,6 @@
 #include "button_handler.h"
 #include "app_config.h"
+#include "app_log.h"
 #include "ble_control.h"
 #include <Arduino.h>
 
@@ -20,6 +21,17 @@ static unsigned long pressTime[6];
 static bool longPressHandled[6];
 static bool prefixReady = true;
 
+static bool sendKeyWithLog(char key, const char* source) {
+    if (!bleIsConnected()) {
+        appLog(String("[BTN] ") + source + " ignored (BLE not connected)");
+        return false;
+    }
+
+    bleSendKey(key);
+    appLog(String("[BTN] ") + source + " sent: " + String(key));
+    return true;
+}
+
 void buttonsInit() {
     for (int i = 0; i < 6; i++) {
         pinMode(buttonPins[i], INPUT_PULLUP);
@@ -33,10 +45,6 @@ void buttonsInit() {
 }
 
 void buttonsLoop() {
-    if (!bleIsConnected()) {
-        return;
-    }
-
     for (int i = 0; i < 6; i++) {
         bool reading = digitalRead(buttonPins[i]);
 
@@ -68,14 +76,14 @@ void buttonsLoop() {
                                 }
 
                                 if (shouldSendPrefix) {
-                                    bleSendKey(g_config.shortPrefixKey);
+                                    sendKeyWithLog(g_config.shortPrefixKey, "Short prefix");
                                     delay(g_config.shortDelayMs);
                                     if (g_config.sendPrefixOnlyOnceUntilLongPress) {
                                         prefixReady = false;
                                     }
                                 }
                             }
-                            bleSendKey(g_config.buttonKeys[i]);
+                            sendKeyWithLog(g_config.buttonKeys[i], "Short press");
                         }
 
                         pressedFlag[i] = false;
@@ -90,7 +98,7 @@ void buttonsLoop() {
                 Serial.print("Long press button ");
                 Serial.println(i + 1);
 
-                bleSendKey(g_config.longPressKey);
+                sendKeyWithLog(g_config.longPressKey, "Long press");
                 prefixReady = true;
                 longPressHandled[i] = true;
             }

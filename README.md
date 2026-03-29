@@ -139,6 +139,17 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - Langdruck ist immer aktiv und sendet die global konfigurierte Langdruck-Taste.
 - Wenn Batteriemodus aktiviert ist, schaltet sich das WLAN nach 60 Sekunden automatisch ab (Bluetooth bleibt aktiv). Das WLAN kann jederzeit manuell ueber den Batteriemodus-Button wieder aktiviert werden.
 
+## BLE Recovery bei Auth-Fehlern
+
+Wenn im Log Meldungen wie `GATT_INSUF_AUTHENTICATION` oder `BTM_GetSecurityFlags false` erscheinen:
+
+1. Smartphone: SmartRace-Geraet entkoppeln/ignorieren.
+2. ESP32 neu starten und **Taste 1 beim Boot fuer ca. 1.2s gedrueckt halten**.
+3. Der ESP loescht dann gespeicherte BLE-Bonds automatisch.
+4. Danach auf dem Smartphone erneut koppeln.
+
+Im Log erscheint dabei: `[INIT] recovery: button 1 held, clearing BLE bonds`.
+
 ## Projektstruktur
 
 - include: oeffentliche Header-Dateien
