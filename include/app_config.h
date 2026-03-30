@@ -3,7 +3,6 @@
 
 struct AppConfig {
     String btName;
-    bool batteryModeEnabled;
     String staSsid;
     String staPassword;
     bool staAutoConnect;

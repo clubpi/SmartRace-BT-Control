@@ -15,7 +15,6 @@ Das Geraet startet einen eigenen WLAN-Access-Point und bietet eine Weboberflaech
 - Schaltbare Optionen in der Weboberflaeche:
   - Praefix bei Kurzdruck senden (ein/aus)
   - Praefix nur einmal senden bis Langdruck erfolgt (ein/aus)
-  - Batteriemodus (ein/aus, schaltet WLAN nach 60 Sekunden ab)
 - WiFi-Manager fuer WLAN-Client (STA): Speichern, Verbinden, Trennen, Scan
 - Eigene System-Info-Seite mit Laufzeit-/Netzwerkdaten
 - Anzeige der letzten 20 Firmware-Logs in der Weboberflaeche
@@ -99,7 +98,6 @@ platformio device monitor --baud 115200
   - Option: Praefix bei Kurzdruck senden
   - Option: Praefix nur einmal senden bis Langdruck erfolgt
    - Langdruck-Taste und Langdruck-Zeit
-   - **Batteriemodus aktivieren/deaktivieren** (Button in diesem Abschnitt)
    - Tasten fuer Button 1 bis 6
 5. In der Sidebar "WiFi Setup" WLAN-Client (STA) konfigurieren:
   - SSID + Passwort speichern
@@ -141,7 +139,7 @@ Service-Aktionen (Neustart, Bonds loeschen) sind in der UI als POST-Aktionen umg
 - Wenn Praefix bei Kurzdruck aktiv ist, wird zuerst das Praefix gesendet, dann nach der eingestellten Verzoegerung die Taste.
 - Wenn "Praefix nur einmal senden" aktiv ist, wird das Praefix beim ersten Kurzdruck (z. B. Taste 1) gesendet und bleibt danach fuer alle Tasten gesperrt, bis ein Langdruck erfolgt.
 - Langdruck ist immer aktiv und sendet die global konfigurierte Langdruck-Taste.
-- Wenn Batteriemodus aktiviert ist, schaltet sich das WLAN nach 60 Sekunden automatisch ab (Bluetooth bleibt aktiv). Das WLAN kann jederzeit manuell ueber den Batteriemodus-Button wieder aktiviert werden.
+- Der Access Point bleibt dauerhaft aktiv (kein automatisches WLAN-Abschalten mehr).
 
 ## BLE Recovery bei Auth-Fehlern
 
@@ -175,6 +173,7 @@ Im Log erscheint dabei: `[INIT] recovery: button 1 held, clearing BLE bonds`.
 - DevKitC-1 v1.1 GPIO38 als zusaetzlichen RGB-LED-Pfad beruecksichtigt.
 - System-Info-Seite grafisch erweitert (KPI-Karten, Daten-Kacheln, Balkenanzeigen fuer Speicher und WLAN-Signal).
 - Webserver-Handling verbessert: `favicon.ico` und unbekannte Requests werden sauber beantwortet (404/405), um Fehler-Logs beim Seitenaufruf zu vermeiden.
+- Batteriemodus komplett entfernt (Config, Web-UI, AP-Timer und zugehoerige Routen).
 
 ### 2026-03-27
 

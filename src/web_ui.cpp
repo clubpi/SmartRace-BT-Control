@@ -52,12 +52,7 @@ static String staText() {
 
 static String apText() {
     if (!wifiApIsActive()) return "Aus";
-    if (!wifiApIsBatteryModeEnabled()) return "Dauerhaft an";
-    return String("An (") + String(wifiApRemainingMs() / 1000) + String("s)");
-}
-
-static String batteryText() {
-    return wifiApIsBatteryModeEnabled() ? "Aktiv" : "Aus";
+    return "An";
 }
 
 static String statusClass(bool ok) {
@@ -80,7 +75,7 @@ static String commonStyle() {
     html += ".content{flex:1;padding:22px}";
     html += ".headline{font-size:40px;margin:0 0 6px;font-weight:800;letter-spacing:.2px}";
     html += ".sub{margin:0 0 14px;color:var(--muted)}";
-    html += ".status-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}";
+    html += ".status-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}";
     html += ".chip{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px}";
     html += ".chip .k{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}";
     html += ".chip .v{font-size:15px;font-weight:800}";
@@ -183,7 +178,6 @@ static String pageShellStart(const String& title, UiPage active) {
     html += "<div class='chip'><span class='k'>Access Point</span><span class='v'>" + apText() + "</span></div>";
     html += "<div class='chip'><span class='k'>AP IP</span><span class='v'>" + WiFi.softAPIP().toString() + "</span></div>";
     html += "<div class='chip'><span class='k'>STA</span><span class='v'><span class='badge " + statusClass(wifiStaIsConnected()) + "'>" + staText() + "</span></span></div>";
-    html += "<div class='chip'><span class='k'>Batteriemodus</span><span class='v'>" + batteryText() + "</span></div>";
     html += "</div>";
 
     return html;
@@ -218,13 +212,7 @@ static String buildOverviewPage() {
     if (g_config.sendPrefixOnlyOnceUntilLongPress) html += " checked";
     html += "><label for='prefix_once'>Praefix nur einmal senden bis Langdruck</label></div>";
 
-    html += "<div class='btn-row'>";
-    if (wifiApIsBatteryModeEnabled()) {
-        html += "<button class='btn btn-secondary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus deaktivieren</button>";
-    } else {
-        html += "<button class='btn btn-primary' type='submit' formmethod='POST' formaction='/battery-mode-toggle'>Batteriemodus aktivieren</button>";
-    }
-    html += "</div></section>";
+    html += "</section>";
 
     html += "<section class='section'><h2>Buttons 1-6</h2><div class='grid-6'>";
     for (int i = 0; i < 6; i++) {
@@ -474,17 +462,6 @@ static void handleReboot() {
     ESP.restart();
 }
 
-static void handleBatteryModeToggle() {
-    bool enableBatteryMode = !wifiApIsBatteryModeEnabled();
-    wifiApSetBatteryMode(enableBatteryMode);
-    g_config.batteryModeEnabled = enableBatteryMode;
-    configSave();
-    appLog(String("Battery mode ") + (enableBatteryMode ? "enabled" : "disabled"));
-
-    server.sendHeader("Location", "/");
-    server.send(303, "text/plain", "");
-}
-
 void webUiInit() {
     server.on("/favicon.ico", HTTP_GET, []() {
         server.send(204, "text/plain", "");
@@ -500,7 +477,6 @@ void webUiInit() {
     server.on("/wifi-scan", HTTP_POST, handleWifiScan);
     server.on("/delete-bonds", HTTP_POST, handleDeleteBonds);
     server.on("/reboot", HTTP_POST, handleReboot);
-    server.on("/battery-mode-toggle", HTTP_POST, handleBatteryModeToggle);
 
     server.onNotFound([]() {
         if (server.method() == HTTP_GET) {

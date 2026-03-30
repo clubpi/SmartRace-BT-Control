@@ -6,11 +6,8 @@
 
 static const char* AP_SSID = "SmartRace-Setup";
 static const char* AP_PASSWORD = "12345678";
-static const uint32_t AP_BATTERY_TIMEOUT_MS = 60000;
 
 static bool apActive = false;
-static bool batteryModeEnabled = false;
-static unsigned long apStartMs = 0;
 
 static void updateWifiMode() {
     wl_status_t staStatus = WiFi.status();
@@ -26,7 +23,6 @@ void wifiApEnable() {
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(AP_SSID, AP_PASSWORD);
     apActive = true;
-    apStartMs = millis();
 
     appLog(String("AP SSID: ") + AP_SSID);
     appLog("AP Security: WPA2-PSK");
@@ -44,41 +40,11 @@ void wifiApDisable() {
     appLog("AP disabled");
 }
 
-void wifiApSetBatteryMode(bool enabled) {
-    batteryModeEnabled = enabled;
-    g_config.batteryModeEnabled = enabled;
-
-    if (!apActive) {
-        return;
-    }
-
-    if (batteryModeEnabled) {
-        apStartMs = millis();
-    }
-}
-
-bool wifiApIsBatteryModeEnabled() {
-    return batteryModeEnabled;
-}
-
 bool wifiApIsActive() {
     return apActive;
 }
 
-uint32_t wifiApRemainingMs() {
-    if (!apActive || !batteryModeEnabled) {
-        return 0;
-    }
-
-    unsigned long elapsed = millis() - apStartMs;
-    if (elapsed >= AP_BATTERY_TIMEOUT_MS) {
-        return 0;
-    }
-    return AP_BATTERY_TIMEOUT_MS - elapsed;
-}
-
 void wifiApInit() {
-    batteryModeEnabled = g_config.batteryModeEnabled;
     wifiApEnable();
     if (g_config.staAutoConnect && g_config.staSsid.length() > 0) {
         appLog("STA auto connect requested");
@@ -87,14 +53,6 @@ void wifiApInit() {
 }
 
 void wifiApLoop() {
-    if (!apActive || !batteryModeEnabled) {
-        return;
-    }
-
-    if (millis() - apStartMs >= AP_BATTERY_TIMEOUT_MS) {
-        appLog("Battery mode timeout reached - disabling AP");
-        wifiApDisable();
-    }
 }
 
 const char* wifiApSsid() {
